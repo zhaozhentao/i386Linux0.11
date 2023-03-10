@@ -1,2 +1,6 @@
-bootsect *.o bootsect.s *_elf
+bootsect
+*.o 
+bootsect.s 
+*_elf
+*.dis
 
