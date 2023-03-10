@@ -1,6 +1,5 @@
 bootsect
 *.o 
-bootsect.s 
 *_elf
 *.dis
 setup
