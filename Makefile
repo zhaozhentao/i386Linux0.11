@@ -5,10 +5,10 @@ all: Image
 Image: boot/bootsect boot/setup
 	tools/build.sh boot/bootsect boot/setup Image $(ROOT_DEV)
 
-boot/bootsect: boot/bootsect.S
+boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
 
-boot/setup: boot/setup.S
+boot/setup: boot/setup.s
 	make setup -C boot
 
 start:
