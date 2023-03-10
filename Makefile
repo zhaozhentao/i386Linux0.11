@@ -11,7 +11,7 @@ boot/bootsect: boot/bootsect.s
 start: Image
 	qemu-system-i386 -m 16M -boot a -fda Image -hda hdc-0.11.img -curses
 
-debug:
+debug: Image
 	qemu-system-i386 -s -S -m 16M -boot a -fda Image -hda hdc-0.11.img -curses
 
 clean:
