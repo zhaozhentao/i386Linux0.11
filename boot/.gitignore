@@ -1,2 +1,2 @@
-bootsect *.o bootsect.s
+bootsect *.o bootsect.s *_elf
 

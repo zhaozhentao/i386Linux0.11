@@ -8,3 +8,7 @@ Image: boot/bootsect
 boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
 
+clean:
+	rm -f Image
+	for i in boot; do make clean -C $$i; done
+
