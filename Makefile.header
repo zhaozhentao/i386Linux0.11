@@ -1,0 +1,5 @@
+AS = as --32
+LD = ld
+LDFLAGS = -m elf_i386
+CC = gcc
+
