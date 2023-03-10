@@ -3,4 +3,5 @@ bootsect
 bootsect.s 
 *_elf
 *.dis
+setup
 
