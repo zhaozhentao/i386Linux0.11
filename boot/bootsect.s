@@ -2,6 +2,7 @@
 
 .global _start 
 
+.equ SETUPLEN, 4                      # nr of setup 模块的扇区数
 .equ BOOTSEG, 0x07c0                  # 启动扇区代码的起始地址 0x7c00
 .equ INITSEG, 0x9000                  # 启动代码将会搬到 0x90000 这个位置, 注意是 INITSEG 左移 4 位
 .equ ROOT_DEV, 0x301
@@ -25,6 +26,20 @@ go:
   mov  %ax, %ss
   mov  $0xFF00, %sp                   # arbitrary value >> 512
 
+load_setup:                           # 将 setup 模块加载到 bootsect 模块后, 即 0x90200 地址处
+  mov  $0x0000, %dx                   # drive 0, head 0
+  mov  $0x0002, %cx                   # sector 2, track 0
+  mov  $0x0200, %bx                   # address = 512, in INITSEG
+  .equ AX, 0x0200 + SETUPLEN
+  mov  $AX, %ax                       # service 2, nr of sectors
+  int  $0x13                          # 使用 BIOS 读取磁盘功能
+  jnc  ok_load_setup                  # 成功读取磁盘内容，跳转到 ok_load_setup
+  mov  $0x0000, %dx
+  mov  $0x0000, %ax                   # reset the diskette
+  int  $0x13
+  jmp  load_setup
+
+ok_load_setup:
 # Print some inane message
   mov  $0x03, %ah                     # 读取光标位置
   xor  %bh, %bh
