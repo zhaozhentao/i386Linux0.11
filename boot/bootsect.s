@@ -15,7 +15,7 @@ _start:
   mov  $256, %cx                      # 设置移动计数值 256 字,即 512 字节
   sub  %si, %si                       # si = si - si 表示将 si 寄存器清零, 因为在当前实模式下 寻址方式为 ds << 4 + si 即 0x7c00 + 0x0
   sub  %di, %di                       # 同上 目标地址为 es << 4 + di 即 0x90000 + 0x0
-  rep  movsw                          # 重复执行并递减cx的值, 将 (e)cx 个字从 ds:[(e)si] 移到 es:[(e)di]
+  rep  movsw                          # 重复执行并递减 cx 的值, 将 (e)cx 个字从 ds:[(e)si] 移到 es:[(e)di]
   ljmp $INITSEG, $go                  # 段间跳转，这里 INITSEG 指出跳转到的段地址，跳转后 cs 代码段寄存器的值为0x9000
 
 go:
@@ -40,6 +40,16 @@ load_setup:                           # 将 setup 模块加载到 bootsect 模�
   jmp  load_setup
 
 ok_load_setup:
+  mov  $0x00, %dl                     # 调用 BIOS 获取硬盘参数
+  mov  $0x0800, %ax                   # AH=8 表示获取硬盘参数
+  int  $0x13
+  mov  $0x00, %ch
+  #seg cs
+  mov  %cx, %cs:sectors + 0           # 将保存在 cx 寄存器的磁道数保存在 sectors 中
+  mov  $INITSEG, %ax
+  mov  %ax, %es                       # 重新将 INITSEG 保存到 es 附加寄存器
+
+
 # Print some inane message
   mov  $0x03, %ah                     # 读取光标位置
   xor  %bh, %bh
@@ -50,6 +60,9 @@ ok_load_setup:
   mov  $msg1, %bp
   mov  $0x1301, %ax                   # write string, move cursor
   int  $0x10
+
+sectors:
+  .word 0
 
 msg1:
   .byte 13, 10
