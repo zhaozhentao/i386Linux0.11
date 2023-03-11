@@ -14,7 +14,7 @@ _start:
   mov  $256, %cx                      # 设置移动计数值 256 字,即 512 字节
   sub  %si, %si                       # si = si - si 表示将 si 寄存器清零, 因为在当前实模式下 寻址方式为 ds << 4 + si 即 0x7c00 + 0x0
   sub  %di, %di                       # 同上 目标地址为 es << 4 + di 即 0x90000 + 0x0
-  rep  movs                           # 重复执行并递减cx的值, 将 (e)cx 个字从 ds:[(e)si] 移到 es:[(e)di]
+  rep  movsw                          # 重复执行并递减cx的值, 将 (e)cx 个字从 ds:[(e)si] 移到 es:[(e)di]
   ljmp $INITSEG, $go                  # 段间跳转，这里 INITSEG 指出跳转到的段地址，跳转后 cs 代码段寄存器的值为0x9000
 
 go:
