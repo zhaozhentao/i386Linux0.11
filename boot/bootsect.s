@@ -25,6 +25,22 @@ go:
   mov  %ax, %ss
   mov  $0xFF00, %sp                   # arbitrary value >> 512
 
+# Print some inane message
+  mov  $0x03, %ah                     # 读取光标位置
+  xor  %bh, %bh
+  int  $0x10
+
+  mov  $30, %cx
+  mov  $0x0007, %bx                   # page 0, attribute 7 (normal)
+  mov  $msg1, %bp
+  mov  $0x1301, %ax                   # write string, move cursor
+  int  $0x10
+
+msg1:
+  .byte 13, 10
+  .ascii "IceCityOS is booting ..."
+  .byte 13, 10, 13, 10
+
 .org 508                              # 此处经过编译后是地址 508 处, 通过后面的标识 55 aa，BIOS 就会认为这是 主引导记录MBR 代码，会将 bootsect 所在的 512 byte加载到内存中运行
 root_dev:
   .word ROOT_DEV
