@@ -9,6 +9,7 @@
 .equ SYSSEG, 0x1000                   # system 模块将会被搬到这个位置 0x10000 (65536).
 .equ ENDSEG, SYSSEG + SYSSIZE         # where to stop loading
 .equ ROOT_DEV, 0x301
+.equ AX, 0x0200 + SETUPLEN
 
 _start:
   mov  $BOOTSEG, %ax                  # 将 ds 数据段寄存器设置为0x7C0
@@ -30,10 +31,9 @@ go:
   mov  $0xFF00, %sp                   # arbitrary value >> 512
 
 load_setup:                           # 将 setup 模块加载到 bootsect 模块后, 即 0x90200 地址处
-  mov  $0x0000, %dx                   # drive 0, head 0
-  mov  $0x0002, %cx                   # sector 2, track 0
-  mov  $0x0200, %bx                   # address = 512, in INITSEG
-  .equ AX, 0x0200 + SETUPLEN
+  mov  $0x0000, %dx                   # drive 0, 0 号磁头
+  mov  $0x0002, %cx                   # 磁道 0 ，第二个扇区
+  mov  $0x0200, %bx                   # 将磁盘读出的数据放到这个位置, 位置是由 es:bx 确定，目前 es 为 0x9000,所以地址为 0x9000 << 4 + 0x200 = 0x90200
   mov  $AX, %ax                       # service 2, nr of sectors
   int  $0x13                          # 使用 BIOS 读取磁盘功能
   jnc  ok_load_setup                  # 成功读取磁盘内容，跳转到 ok_load_setup
@@ -66,14 +66,14 @@ ok_load_setup:
 
 # 接下来将 system 模块搬到 0x10000 处
   mov  $SYSSEG, %ax
-  mov  %ax, %es                       # segment of 0x010000
+  mov  %ax, %es                       # 指定接下来从磁盘读出的内容要存放的地址, 依然是 (es << 4 + bx)
   call read_it
   call kill_motor                     # 关闭马达
 
 # 此处存放几个变量,用于下面的 read_it 程序
-sread: .word 1 + SETUPLEN             # 当前扇区从 build.sh 中可以看到 bootsect 占 1 个扇区, setup 占 4 个扇区, bootsect 和 setup 已经读取
+sread: .word 1 + SETUPLEN             # 当前磁道已读扇区数，当前扇区从 build.sh 中可以看到 bootsect 占 1 个扇区, setup 占 4 个扇区, bootsect 和 setup 已经读取
 head:  .word 0                        # current head
-track: .word 0                        # current track
+track: .word 0                        # 当前磁道
 
 read_it:
   mov  %es, %ax
@@ -91,58 +91,61 @@ ok1_read:
   sub  sread, %ax                     # 计算当前磁道还要读取的扇区数 ax = ax - sread
   mov  %ax, %cx                       # 将当前磁道还要读取的扇区数保存至计数寄存器 cx 中
   shl  $9, %cx                        # cs = cs << 9,每个扇区为 512 字节, 即 2^9 ,这里保存读取的字节数
-  add  %bx, %cx                       # 这里 bx 应该为 0 ??
+  add  %bx, %cx                       # 目标地址增加 cx, 因为目标地址是 es: bx 
   jnc  ok2_read                       # 检查进位标志 CF ,CF = 0 时跳转 ok2_read
   je   ok2_read                       # 如果相等跳转 ok2_read
   xor  %ax, %ax
   sub  %bx, %ax
   shr  $9, %ax
 ok2_read:
-  call read_track
-  mov  %ax, %cx
-  add  sread, %ax
+  call read_track                     # 读当前磁道指定的开始扇区和需要读取的扇区,真正的读操作
+  mov  %ax, %cx                       # 从 read_track 运行结果中获取刚刚读到的扇区数量
+  add  sread, %ax                     # 将当前磁道已读取扇区数量增加 sread = sread + ax
   #seg cs
-  cmp  %cs:sectors+0, %ax
-  jne  ok3_read
-  mov  $1, %ax
-  sub  head, %ax
-  jne  ok4_read
-  incw track
+  cmp  %cs:sectors+0, %ax             # 看看这个磁道读完了没有
+  jne  ok3_read                       # ax != 磁道扇区数， 跳转至 ok3_read 继续读取当前磁道
+  mov  $1, %ax                        # ax == 磁道扇区数，设置为 1 准备读取下一个磁道
+  sub  head, %ax                      # 判断当前磁头号，如果是 0 磁头，则取读取 1 号磁头，否则就可以取读取下一个磁道了
+  jne  ok4_read                       # 不想等跳转到 ok4_read
+  incw track                          # 当前磁道递增
 ok4_read:
-  mov  %ax, head
-  xor  %ax, %ax
+  mov  %ax, head                      # 保存磁头号
+  xor  %ax, %ax                       # 清零
 ok3_read:
-  mov  %ax, sread
-  shl  $9, %cx
-  add  %cx, %bx
-  jnc  rp_read
-  mov  %es, %ax
+  mov  %ax, sread                     # 加载当前磁道已读扇区数
+  shl  $9, %cx                        # 上次已读数据
+  add  %cx, %bx                       # 调整目的地址段内偏移, 目的地址 (es << 4 + bx)
+  jnc  rp_read                        # 检查有没有进位，如果进位了，段 + 1，清零段偏移
+  mov  %es, %ax                       # 下面几句完成段 + 1
   add  $0x1000, %ax
   mov  %ax, %es
-  xor  %bx, %bx
+  xor  %bx, %bx                       # 段内偏移清零
   jmp  rp_read
+
+# 读当前磁道开始扇区和需要读的扇区数到 es:bx 处
 read_track:
   push %ax
   push %bx
   push %cx
   push %dx
-  mov  track, %dx
-  mov  sread, %cx
-  inc  %cx
-  mov  %dl, %ch
-  mov  head, %dx
-  mov  %dl, %dh
-  mov  $0, %dl
-  and  $0x0100, %dx
-  mov  $2, %ah
-  int  $0x13
-  jc   bad_rt
+  mov  track, %dx                              # 加载当前磁道道 dx 寄存器
+  mov  sread, %cx                              # 加载当前扇区道 cx 寄存器
+  inc  %cx                                     # 当前扇区 + 1
+  mov  %dl, %ch                                # 当前磁道号, dl 是 dx 寄存器的低 8 位
+  mov  head, %dx                               # 取当前磁头号
+  mov  %dl, %dh                                # dh 保存磁头号, dh dl 是 dx 寄存器的高 8 位和低 8 位
+  mov  $0, %dl                                 # 驱动器号
+  and  $0x0100, %dx                            # 磁头号不大于 1
+  mov  $2, %ah                                 # ah = 2 表示调用读磁盘扇区, al 中保存需要读的扇区数量,在 ok1_read 中设置了
+  int  $0x13                                   # 发起读磁盘扇区功能
+  jc   bad_rt                                  # 如果出错，调用 bad_rt
   pop  %dx
   pop  %cx
   pop  %bx
   pop  %ax
   ret
-bad_rt:	mov	$0, %ax
+bad_rt:
+  mov  $0, %ax
   mov  $0, %dx
   int  $0x13
   pop  %dx
