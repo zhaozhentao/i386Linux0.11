@@ -154,17 +154,17 @@ read_track:
   push %bx
   push %cx
   push %dx
-  mov  track, %dx                              # 加载当前磁道道 dx 寄存器
-  mov  sread, %cx                              # 加载当前扇区道 cx 寄存器
-  inc  %cx                                     # 当前扇区 + 1
-  mov  %dl, %ch                                # 当前磁道号, dl 是 dx 寄存器的低 8 位
-  mov  head, %dx                               # 取当前磁头号
-  mov  %dl, %dh                                # dh 保存磁头号, dh dl 是 dx 寄存器的高 8 位和低 8 位
-  mov  $0, %dl                                 # 驱动器号
-  and  $0x0100, %dx                            # 磁头号不大于 1
-  mov  $2, %ah                                 # ah = 2 表示调用读磁盘扇区, al 中保存需要读的扇区数量,在 ok1_read 中设置了
-  int  $0x13                                   # 发起读磁盘扇区功能
-  jc   bad_rt                                  # 如果出错，调用 bad_rt
+  mov  track, %dx                     # 加载当前磁道道 dx 寄存器
+  mov  sread, %cx                     # 加载当前扇区道 cx 寄存器
+  inc  %cx                            # 当前扇区 + 1
+  mov  %dl, %ch                       # 当前磁道号, dl 是 dx 寄存器的低 8 位
+  mov  head, %dx                      # 取当前磁头号
+  mov  %dl, %dh                       # dh 保存磁头号, dh dl 是 dx 寄存器的高 8 位和低 8 位
+  mov  $0, %dl                        # 驱动器号
+  and  $0x0100, %dx                   # 磁头号不大于 1
+  mov  $2, %ah                        # ah = 2 表示调用读磁盘扇区, al 中保存需要读的扇区数量,在 ok1_read 中设置了
+  int  $0x13                          # 发起读磁盘扇区功能
+  jc   bad_rt                         # 如果出错，调用 bad_rt
   pop  %dx
   pop  %cx
   pop  %bx
