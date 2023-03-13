@@ -6,6 +6,7 @@
 .equ SETUPLEN, 4                      # nr of setup 模块的扇区数
 .equ BOOTSEG, 0x07c0                  # 启动扇区代码的起始地址 0x7c00
 .equ INITSEG, 0x9000                  # 启动代码将会搬到 0x90000 这个位置, 注意是 INITSEG 左移 4 位
+.equ SETUPSEG, 0x9020                 # setup 模块将会被加载到这个地址 0x90200
 .equ SYSSEG, 0x1000                   # system 模块将会被搬到这个位置 0x10000 (65536).
 .equ ENDSEG, SYSSEG + SYSSIZE         # where to stop loading
 .equ ROOT_DEV, 0x301
@@ -69,6 +70,31 @@ ok_load_setup:
   mov  %ax, %es                       # 指定接下来从磁盘读出的内容要存放的地址, 依然是 (es << 4 + bx)
   call read_it
   call kill_motor                     # 关闭马达
+
+# After that we check which root-device to use. If the device is
+# defined (#= 0), nothing is done and the given device is used.
+# Otherwise, either /dev/PS0 (2,28) or /dev/at0 (2,8), depending
+# on the number of sectors that the BIOS reports currently.
+
+	#seg cs
+  mov  %cs:root_dev+0, %ax            # 读取 root_dev
+  cmp  $0, %ax                        # 和 0 比较一下
+  jne  root_defined                   # 如果 root_dev != 0 跳转到 root_defined
+  #seg cs
+  mov  %cs:sectors+0, %bx
+  mov  $0x0208, %ax		# /dev/ps0 - 1.2Mb
+  cmp  $15, %bx
+  je   root_defined
+  mov  $0x021c, %ax		# /dev/PS0 - 1.44Mb
+  cmp  $18, %bx
+  je   root_defined
+undef_root:
+  jmp undef_root                      # 找不到设备，死循环
+root_defined:
+  mov  %ax, %cs:root_dev+0            # 将检查过的设备号保存到 root_dev 中
+
+# 加载完所有模块后，可以跳转到 setup 了, bye bye bootsect
+  ljmp  $SETUPSEG, $0                 # 跳转下一个模块 setup
 
 # 此处存放几个变量,用于下面的 read_it 程序
 sread: .word 1 + SETUPLEN             # 当前磁道已读扇区数，当前扇区从 build.sh 中可以看到 bootsect 占 1 个扇区, setup 占 4 个扇区, bootsect 和 setup 已经读取
