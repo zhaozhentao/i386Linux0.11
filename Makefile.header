@@ -5,3 +5,5 @@ CC = gcc
 OBJCOPY = objcopy
 OBJDUMP = objdump
 STRIP = strip
+CFLAGS = -g -m32
+

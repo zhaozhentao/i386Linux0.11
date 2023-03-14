@@ -169,7 +169,7 @@ gdt:
   .word 0x9200                              # data read/write
   .word 0x00C0                              # granularity=4096, 386
 
-# CPU 进入保护模式之前要求设置 IDT 表，这里先设置一个空表
+# CPU 进入保护模式之前要求设置 IDT 表，这里先设置一个空表,进入 system 模块 (head.s) 会重新设置
 idt_48:
   .word 0                                   # 这里两个字节是 idt 表的限长,这里先设 为 0
   .word 0, 0                                # idt 表在线性空间地址中 32 位基地址，这里设置为 0

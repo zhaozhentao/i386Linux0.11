@@ -1,3 +1,5 @@
 *.o 
 Image
 system.tmp
+*.dis
+
