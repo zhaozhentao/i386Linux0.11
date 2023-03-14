@@ -13,7 +13,7 @@ Image: boot/bootsect boot/setup tools/system
 	$(STRIP) system.tmp
 	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image $(ROOT_DEV)
-	$(OBJDUMP) -D -m i386 system.tmp > system.dis
+	$(OBJDUMP) -D -m i386 tools/system > system.dis
 	rm system.tmp
 	rm -f tools/kernel
 
@@ -44,6 +44,6 @@ stop:
 	@kill -9 $$(ps -ef | grep qemu-system-i386 | awk '{print $$2}')
 
 clean:
-	rm -f Image
+	rm -f Image system.dis
 	for i in boot; do make clean -C $$i; done
 
