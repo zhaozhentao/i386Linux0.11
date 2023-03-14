@@ -2,8 +2,11 @@
 
 bootsect=$1
 setup=$2
-IMAGE=$3
-root_dev=$4
+system=$3
+IMAGE=$4
+root_dev=$5
+
+SYS_SIZE=$((0x3000*16))
 
 # set the default "device" file for root image file
 if [ -z "$root_dev" ]; then
@@ -21,6 +24,12 @@ dd if=$bootsect bs=512 count=1 of=$IMAGE 2>&1 >/dev/null
 # Write setup(4 * 512bytes, four sectors) to stdout
 [ ! -f "$setup" ] && echo "there is no setup binary file there" && exit -1
 dd if=$setup seek=1 bs=512 count=4 of=$IMAGE 2>&1 >/dev/null
+
+# Write system(< SYS_SIZE) to stdout
+[ ! -f "$system" ] && echo "there is no system binary file there" && exit -1
+system_size=`wc -c $system |cut -d" " -f1`
+[ $system_size -gt $SYS_SIZE ] && echo "the system binary is too big" && exit -1
+dd if=$system seek=5 bs=512 count=$((2888-1-4)) of=$IMAGE 2>&1 >/dev/null
 
 echo -ne "\x$DEFAULT_MINOR_ROOT\x$DEFAULT_MAJOR_ROOT" | dd ibs=1 obs=1 count=2 seek=508 of=$IMAGE conv=notrunc  2>&1 >/dev/null
 

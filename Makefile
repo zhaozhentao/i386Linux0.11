@@ -1,15 +1,31 @@
+include Makefile.header
+
+LDFLAGS	+= -Ttext 0 -e startup_32
+
 ROOT_DEV= #FLOPPY
 
 all: Image	
 
-Image: boot/bootsect boot/setup
-	tools/build.sh boot/bootsect boot/setup Image $(ROOT_DEV)
+Image: boot/bootsect boot/setup tools/system
+	cp -f tools/system system.tmp
+	$(STRIP) system.tmp
+	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
+	tools/build.sh boot/bootsect boot/setup tools/kernel Image $(ROOT_DEV)
+	rm system.tmp
+	rm -f tools/kernel
 
 boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
 
 boot/setup: boot/setup.s
 	make setup -C boot
+
+boot/head.o: boot/head.s
+	make head.o -C boot
+
+tools/system: boot/head.o
+	$(LD) $(LDFLAGS) boot/head.o \
+	-o tools/system
 
 start: Image
 	qemu-system-i386 -m 16M -boot a -fda Image -hda hdc-0.11.img -curses

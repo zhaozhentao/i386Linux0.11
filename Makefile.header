@@ -4,4 +4,4 @@ LDFLAGS = -m elf_i386
 CC = gcc
 OBJCOPY = objcopy
 OBJDUMP = objdump
-
+STRIP = strip
