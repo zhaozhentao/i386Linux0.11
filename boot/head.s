@@ -8,6 +8,5 @@ startup_32:
   mov   %ax, %es
   mov   %ax, %fs
   mov   %ax, %gs
-  lss   stack_start, %esp
-
+  lss   stack_start, %esp               # 这里设置一下栈，stack_start 定义在 kernel/sched.c 中, 这个指令将 stack_start 中的 a 赋值 esp 寄存器, b 赋值 ss 寄存器, 其中 a 是 user_stack 地址, b 是段选择符
 
