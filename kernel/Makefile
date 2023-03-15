@@ -12,12 +12,14 @@ CFLAGS	+= -I../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = sched.o 
+OBJS  = sched.o printk.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
 
 sched.s sched.o: sched.c
+
+printk.s printk.o: printk.c
 
 clean:
 	rm -f *.o

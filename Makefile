@@ -45,5 +45,5 @@ stop:
 
 clean:
 	rm -f Image system.dis
-	for i in boot; do make clean -C $$i; done
+	for i in boot kernel; do make clean -C $$i; done
 
