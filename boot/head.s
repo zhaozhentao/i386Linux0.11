@@ -11,6 +11,18 @@ startup_32:
   lss   stack_start, %esp               # 这里设置一下栈，stack_start 定义在 kernel/sched.c 中, 这个指令将 stack_start 中的 a 赋值 esp 寄存器, b 赋值 ss 寄存器, 其中 a 是 user_stack 地址, b 是段选择符
   call  setup_idt                       # 设置 idt 中断描述符表
   call  setup_gdt                       # 设置 gdt 全局描述符表
+  movl  $0x10, %eax                     # 重新加载一下段寄存器
+  mov   %ax,   %ds                      # after changing gdt. CS was already
+  mov   %ax,   %es                      # reloaded in 'setup_gdt'
+  mov   %ax,   %fs
+  mov   %ax,   %gs
+  lss   stack_start, %esp
+  xorl  %eax, %eax
+1:
+  incl  %eax                            # 检查一下A20是否真的开启了
+  movl  %eax, 0x000000                  # 死循环表示没有开启成功
+  cmpl  %eax, 0x100000
+  je    1b
 
 
 # setup_idt 需要结合中断描述符的格式去看
