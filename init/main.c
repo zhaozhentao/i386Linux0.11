@@ -1,5 +1,7 @@
 #include <linux/fs.h>
 
+extern void mem_init(long start, long end);
+
 /*
  * 这些参数是在 setup 模块里面存下来的
  */
@@ -31,5 +33,7 @@ void main(void)
         buffer_memory_end = 1*1024*1024;
 
     main_memory_start = buffer_memory_end;
+
+    mem_init(main_memory_start,memory_end);
 }
 

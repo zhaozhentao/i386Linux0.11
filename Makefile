@@ -5,7 +5,7 @@ CFLAGS	+= -Iinclude
 
 ROOT_DEV= #FLOPPY
 
-ARCHIVES=kernel/kernel.o fs/fs.o
+ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
 LIBS	=lib/lib.a
 
 all: Image	
@@ -18,6 +18,9 @@ Image: boot/bootsect boot/setup tools/system
 	$(OBJDUMP) -D -m i386 tools/system > system.dis
 	rm system.tmp
 	rm -f tools/kernel
+
+mm/mm.o:
+	make -C mm
 
 fs/fs.o:
 	make -C fs
@@ -41,7 +44,7 @@ tools/system: boot/head.o init/main.o $(ARCHIVES) $(LIBS)
 	-o tools/system
 
 kernel/kernel.o:
-	@make -C kernel
+	make -C kernel
 
 start: Image
 	qemu-system-i386 -m 16M -boot a -fda Image -hda hdc-0.11.img -curses
@@ -54,7 +57,7 @@ stop:
 
 clean:
 	rm -f Image system.dis init/*.o
-	for i in boot kernel lib; do make clean -C $$i; done
+	for i in boot kernel lib mm; do make clean -C $$i; done
 
 init/main.o: init/main.c
 
