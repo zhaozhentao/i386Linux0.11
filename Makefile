@@ -1,10 +1,12 @@
 include Makefile.header
 
 LDFLAGS	+= -Ttext 0 -e startup_32
+CFLAGS	+= -Iinclude
 
 ROOT_DEV= #FLOPPY
 
 ARCHIVES=kernel/kernel.o
+LIBS	=lib/lib.a
 
 all: Image	
 
@@ -17,6 +19,9 @@ Image: boot/bootsect boot/setup tools/system
 	rm system.tmp
 	rm -f tools/kernel
 
+lib/lib.a:
+	make -C lib
+
 boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
 
@@ -26,9 +31,10 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o $(ARCHIVES)
+tools/system: boot/head.o $(ARCHIVES) $(LIBS)
 	$(LD) $(LDFLAGS) boot/head.o \
 	$(ARCHIVES) \
+	$(LIBS) \
 	-o tools/system
 
 kernel/kernel.o:
@@ -45,5 +51,5 @@ stop:
 
 clean:
 	rm -f Image system.dis
-	for i in boot kernel; do make clean -C $$i; done
+	for i in boot kernel lib; do make clean -C $$i; done
 

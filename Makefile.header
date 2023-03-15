@@ -5,5 +5,5 @@ CC = gcc
 OBJCOPY = objcopy
 OBJDUMP = objdump
 STRIP = strip
-CFLAGS = -g -m32
+CFLAGS  = -g -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
 
