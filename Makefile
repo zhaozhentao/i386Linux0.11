@@ -31,8 +31,8 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o $(ARCHIVES) $(LIBS)
-	$(LD) $(LDFLAGS) boot/head.o \
+tools/system: boot/head.o init/main.o $(ARCHIVES) $(LIBS)
+	$(LD) $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	$(LIBS) \
 	-o tools/system
@@ -50,6 +50,8 @@ stop:
 	@kill -9 $$(ps -ef | grep qemu-system-i386 | awk '{print $$2}')
 
 clean:
-	rm -f Image system.dis
+	rm -f Image system.dis init/*.o
 	for i in boot kernel lib; do make clean -C $$i; done
+
+init/main.o: init/main.c
 

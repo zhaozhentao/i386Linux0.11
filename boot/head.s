@@ -2,6 +2,7 @@
 
 .global startup_32
 
+pg_dir:
 startup_32:
   movl  $0x10, %eax                     # 来到 32 位模式后，可以按 32 位方式操作寄存器，movl 双字模式给寄存器赋值, %eax 是 32 位寄存器, %ax 是 %eax 的低 16 位
   mov   %ax, %ds                        # 因为 %ax 是 %eax 低 16 位,所以 %ax = 0x10, 这里和 mov $0x10 %ds 一样,下面几个指令都一样
@@ -23,6 +24,29 @@ startup_32:
   movl  %eax, 0x000000                  # 死循环表示没有开启成功
   cmpl  %eax, 0x100000
   je    1b
+
+# 检查数学协处理器
+  movl  %cr0,%eax                       # 检查数学协处理器
+  andl  $0x80000011, %eax               # Save PG,PE,ET
+  /* "orl $0x10020,%eax" here for 486 might be good */
+  orl   $2, %eax                        # set MP
+  movl  %eax, %cr0
+  call  check_x87
+  jmp   after_page_tables
+
+check_x87:
+  fninit
+  fstsw %ax
+  cmpb  $0,%al
+  je    1f                              /* no coprocessor: have to set bits */
+  movl %cr0, %eax
+  xorl $6, %eax                         /* reset MP, set EM */
+  movl %eax, %cr0
+  ret
+.align 2
+1:
+  .byte 0xDB, 0xE4		/* fsetpm for 287, ignored by 387 */
+  ret
 
 
 # setup_idt 需要结合中断描述符的格式去看
@@ -50,6 +74,31 @@ setup_gdt:
   lgdt gdt_descr
   ret
 
+.org 0x1000
+pg0:
+
+.org 0x2000
+pg1:
+
+.org 0x3000
+pg2:
+
+.org 0x4000
+pg3:
+
+.org 0x5000
+
+after_page_tables:
+  pushl  $0                             # These are the parameters to main :-)
+  pushl  $0
+  pushl  $0
+  pushl  $L6                            # return address for main, if it decides to.
+  pushl  $main
+  jmp    setup_paging
+L6:
+  jmp L6                                # main should never return here, but
+
+
 int_msg:
   .asciz "Unknown interrupt\n\r"
 
@@ -75,6 +124,31 @@ ignore_int:                             # 这是一个哑巴中断处理程序�
   popl   %ecx
   popl   %eax
   iret
+
+.align 2
+setup_paging:
+  movl  $1024*5, %ecx		/* 5 pages - pg_dir+4 page tables */
+  xorl  %eax, %eax
+  xorl  %edi, %edi			/* pg_dir is at 0x000 */
+  cld;rep;stosl
+  movl  $pg0+7, pg_dir		/* set present bit/user r/w */
+  movl  $pg1+7, pg_dir+4		/*  --------- " " --------- */
+  movl  $pg2+7, pg_dir+8		/*  --------- " " --------- */
+  movl  $pg3+7, pg_dir+12		/*  --------- " " --------- */
+  movl  $pg3+4092, %edi
+  movl  $0xfff007, %eax		/*  16Mb - 4096 + 7 (r/w user,p) */
+  std
+1:
+  stosl			/* fill pages backwards - more efficient :-) */
+  subl  $0x1000, %eax
+  jge   1b
+  cld
+  xorl  %eax,  %eax		/* pg_dir is at 0x0000 */
+  movl  %eax,  %cr3		/* cr3 - page directory start */
+  movl  %cr0,  %eax
+  orl   $0x80000000, %eax
+  movl  %eax, %cr0		/* set paging (PG) bit */
+  ret			/* this also flushes prefetch-queue */
 
 .align 2
 .word 0
