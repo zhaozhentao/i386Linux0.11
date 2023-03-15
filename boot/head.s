@@ -9,7 +9,9 @@ startup_32:
   mov   %ax, %fs
   mov   %ax, %gs
   lss   stack_start, %esp               # 这里设置一下栈，stack_start 定义在 kernel/sched.c 中, 这个指令将 stack_start 中的 a 赋值 esp 寄存器, b 赋值 ss 寄存器, 其中 a 是 user_stack 地址, b 是段选择符
-  call  setup_idt                       # 设置 idt
+  call  setup_idt                       # 设置 idt 中断描述符表
+  call  setup_gdt                       # 设置 gdt 全局描述符表
+
 
 # setup_idt 需要结合中断描述符的格式去看
 # 一个中断描述符由 8 个字节组成, 这里选用edx 和 eax 寄存器存放,格式如下
@@ -30,6 +32,10 @@ rp_sidt:
   dec  %ecx                             # 减少未填写描述符数量
   jne  rp_sidt                          # 检查是否填写完中断描述符表 (256 项)
   lidt idt_descr                        # 通知 idt 寄存器加载 idt 表
+  ret
+
+setup_gdt:
+  lgdt gdt_descr
   ret
 
 int_msg:
@@ -61,9 +67,22 @@ ignore_int:                             # 这是一个哑巴中断处理程序�
 .align 2
 .word 0
 idt_descr:
-.word 256*8-1                            # idt contains 256 entries
-.long idt
+  .word 256*8-1                            # idt contains 256 entries
+  .long idt
+
+.align 2
+.word 0
+gdt_descr:
+  .word 256*8-1		# so does gdt (not that that's any
+  .long gdt		# magic number, but it works for me :^)
 
 idt:
-.fill 256, 8, 0                          # idt 未初始化
+  .fill 256, 8, 0                          # idt 未初始化
+
+gdt:
+  .quad 0x0000000000000000                 # 空的描述符
+  .quad 0x00c09a0000000fff                 # 内核代码段最大长度 16 M,各项说明 00c0: granularity=4096, 386, 9A00: code read/exec, 0000: base address=0, 0fff: 16M
+  .quad 0x00c0920000000fff                 # 内核数据段最大长度 16 M,各项说明 00c0: granularity=4096, 386, 9200: data read/write, 0000: base address=0, 0fff: 16M
+  .quad 0x0000000000000000
+  .fill 252,8,0                            # 保留
 
