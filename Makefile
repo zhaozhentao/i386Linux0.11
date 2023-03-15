@@ -5,7 +5,7 @@ CFLAGS	+= -Iinclude
 
 ROOT_DEV= #FLOPPY
 
-ARCHIVES=kernel/kernel.o
+ARCHIVES=kernel/kernel.o fs/fs.o
 LIBS	=lib/lib.a
 
 all: Image	
@@ -18,6 +18,9 @@ Image: boot/bootsect boot/setup tools/system
 	$(OBJDUMP) -D -m i386 tools/system > system.dis
 	rm system.tmp
 	rm -f tools/kernel
+
+fs/fs.o:
+	make -C fs
 
 lib/lib.a:
 	make -C lib
