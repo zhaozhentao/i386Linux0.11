@@ -1,6 +1,6 @@
 # 这个文件开始，cpu 进入 32 位模式，代码是从 0x0 地址开始运行，随后开头部份会被一些页表覆盖掉
 
-.global startup_32
+.global startup_32,idt
 
 pg_dir:
 startup_32:
