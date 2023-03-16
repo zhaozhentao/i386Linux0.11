@@ -1,4 +1,4 @@
-.global divide_error, debug, nmi
+.global divide_error, debug, nmi, int3
 
 divide_error:
   pushl $do_divide_error              # 将 do_divide_error 地址入栈,如果直接将这个地址放到寄存器里面，寄存器原来的数据就丢失了,所以先入栈,再交换到寄存器
@@ -40,5 +40,9 @@ debug:
 
 nmi:
   pushl $do_nmi
+  jmp   no_error_code
+
+int3:
+  pushl $do_int3
   jmp   no_error_code
 
