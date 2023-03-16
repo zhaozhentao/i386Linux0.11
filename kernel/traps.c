@@ -5,12 +5,17 @@ void divide_error(void);
 void debug(void);
 void nmi(void);
 void int3(void);
+void overflow(void);
 
 void do_divide_error(long esp, long error_code) {
 
 }
 
 void do_nmi(long esp, long error_code) {
+
+}
+
+void do_overflow(long esp, long error_code) {
 
 }
 
@@ -38,5 +43,6 @@ void trap_init(void) {
     set_trap_gate(1, &debug);                  // __asm__("int $1" : : ); 触发异常
     set_trap_gate(2, &nmi);                    // 硬件中断，触发方式未知
     set_system_gate(3, &int3);                 // __asm__("int $3" : : ); 触发异常 int3-5 can be called from all
+    set_system_gate(4, &overflow);
 }
 
