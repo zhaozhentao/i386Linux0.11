@@ -1,4 +1,5 @@
 .global divide_error, debug, nmi, int3, overflow, bounds, invalid_op, double_fault
+.global coprocessor_segment_overrun
 
 divide_error:
   pushl $do_divide_error              # 将 do_divide_error 地址入栈,如果直接将这个地址放到寄存器里面，寄存器原来的数据就丢失了,所以先入栈,再交换到寄存器
@@ -57,6 +58,11 @@ bounds:
 invalid_op:
   pushl $do_invalid_op
   jmp   no_error_code
+
+coprocessor_segment_overrun:
+  pushl $do_coprocessor_segment_overrun
+  jmp   no_error_code
+
 
 double_fault:
   pushl $do_double_fault
