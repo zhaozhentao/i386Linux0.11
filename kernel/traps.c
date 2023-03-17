@@ -25,6 +25,10 @@ void do_double_fault(long esp, long error_code) {
 
 }
 
+void do_general_protection(long esp, long error_code) {
+
+}
+
 void do_divide_error(long esp, long error_code) {
 
 }
@@ -90,5 +94,6 @@ void trap_init(void) {
     set_trap_gate(10, &invalid_TSS);
     set_trap_gate(11, &segment_not_present);
     set_trap_gate(12, &stack_segment);
+    set_trap_gate(13, &general_protection);
 }
 
