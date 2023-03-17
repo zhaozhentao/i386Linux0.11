@@ -82,6 +82,10 @@ void do_int3(
 
 }
 
+void do_reserved(long esp, long error_code) {
+
+}
+
 void trap_init(void) {
     int i;
 
@@ -100,5 +104,6 @@ void trap_init(void) {
     set_trap_gate(12, &stack_segment);
     set_trap_gate(13, &general_protection);
     set_trap_gate(14, &page_fault);
+    set_trap_gate(15, &reserved);
 }
 

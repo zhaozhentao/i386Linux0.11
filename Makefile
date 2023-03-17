@@ -48,7 +48,7 @@ tools/system: boot/head.o init/main.o $(ARCHIVES) $(MATH) $(LIBS)
 kernel/math/math.a:
 	make -C kernel/math
 
-kernel/kernel.o:
+kernel/kernel.o: kernel/traps.c
 	make -C kernel
 
 start: Image
