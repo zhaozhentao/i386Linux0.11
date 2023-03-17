@@ -53,6 +53,10 @@ void do_invalid_TSS(long esp,long error_code) {
 
 }
 
+void do_segment_not_present(void) {
+
+}
+
 void do_int3(
     long * esp,
     long error_code,
@@ -84,5 +88,6 @@ void trap_init(void) {
     set_trap_gate(8, &double_fault);
     set_trap_gate(9, &coprocessor_segment_overrun);
     set_trap_gate(10, &invalid_TSS);
+    set_trap_gate(11, &segment_not_present);
 }
 
