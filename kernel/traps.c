@@ -89,5 +89,6 @@ void trap_init(void) {
     set_trap_gate(9, &coprocessor_segment_overrun);
     set_trap_gate(10, &invalid_TSS);
     set_trap_gate(11, &segment_not_present);
+    set_trap_gate(12, &stack_segment);
 }
 
