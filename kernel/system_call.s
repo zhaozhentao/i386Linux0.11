@@ -1,7 +1,11 @@
-.global device_not_available
+.global device_not_available, coprocessor_error
 
 # todo: this function
 ret_from_sys_call:
+
+# todo: this function
+.align 2
+coprocessor_error:
 
 .align 2
 device_not_available:                       # 设备不存在或协处理器不存器 CPU 执行一个协处理器指令就会触发异常,在异常处理程序模拟协处理器处理

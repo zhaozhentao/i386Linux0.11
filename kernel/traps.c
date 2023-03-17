@@ -105,5 +105,7 @@ void trap_init(void) {
     set_trap_gate(13, &general_protection);
     set_trap_gate(14, &page_fault);
     set_trap_gate(15, &reserved);
+    set_trap_gate(16, &coprocessor_error);
+
 }
 
