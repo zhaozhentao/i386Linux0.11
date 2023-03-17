@@ -21,6 +21,10 @@ void reserved(void);
 void parallel_interrupt(void);
 void irq13(void);
 
+void do_double_fault(long esp, long error_code) {
+
+}
+
 void do_divide_error(long esp, long error_code) {
 
 }
@@ -33,13 +37,11 @@ void do_overflow(long esp, long error_code) {
 
 }
 
-void do_bounds(long esp, long error_code)
-{
+void do_bounds(long esp, long error_code) {
 
 }
 
-void do_invalid_op(long esp, long error_code)
-{
+void do_invalid_op(long esp, long error_code) {
 
 }
 
@@ -56,7 +58,7 @@ void do_int3(
     long ecx,
     long ebx,
     long eax
-){
+) {
 
 }
 
@@ -70,6 +72,7 @@ void trap_init(void) {
     set_system_gate(4, &overflow);             // 触发方式未知 最大 int 数值 + 1 不能触发 overflow 异常
     set_system_gate(5, &bounds);               // 边界溢出异常, 触发方式未知
     set_trap_gate(6, &invalid_op);
-    set_trap_gate(7, &device_not_available);
+    set_trap_gate(7, &device_not_available);   // 数学处理器不存在异常
+    set_trap_gate(8, &double_fault);
 }
 

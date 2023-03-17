@@ -1,4 +1,4 @@
-.global divide_error, debug, nmi, int3, overflow, bounds, invalid_op
+.global divide_error, debug, nmi, int3, overflow, bounds, invalid_op, double_fault
 
 divide_error:
   pushl $do_divide_error              # 将 do_divide_error 地址入栈,如果直接将这个地址放到寄存器里面，寄存器原来的数据就丢失了,所以先入栈,再交换到寄存器
@@ -57,4 +57,38 @@ bounds:
 invalid_op:
   pushl $do_invalid_op
   jmp   no_error_code
+
+double_fault:
+  pushl $do_double_fault
+error_code:
+  xchgl %eax, 4(%esp)             # error code <-> %eax
+  xchgl %ebx, (%esp)              # &function <-> %ebx
+  pushl %ecx
+  pushl %edx
+  pushl %edi
+  pushl %esi
+  pushl %ebp
+  push  %ds
+  push  %es
+  push  %fs
+  pushl %eax                      # error code
+  lea   44(%esp), %eax            # offset
+  pushl %eax
+  movl  $0x10, %eax
+  mov   %ax, %ds
+  mov   %ax, %es
+  mov   %ax, %fs
+  call  *%ebx
+  addl  $8, %esp
+  pop   %fs
+  pop   %es
+  pop   %ds
+  popl  %ebp
+  popl  %esi
+  popl  %edi
+  popl  %edx
+  popl  %ecx
+  popl  %ebx
+  popl  %eax
+  iret
 
