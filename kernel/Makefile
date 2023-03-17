@@ -12,7 +12,7 @@ CFLAGS	+= -I../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = sched.o traps.o asm.o printk.o vsprintf.o
+OBJS  = sched.o system_call.o traps.o asm.o printk.o vsprintf.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
@@ -29,4 +29,5 @@ vsprintf.s vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h
 
 clean:
 	rm -f *.o
+	for i in math; do make clean -C $$i; done
 

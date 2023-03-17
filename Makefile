@@ -6,6 +6,7 @@ CFLAGS	+= -Iinclude
 ROOT_DEV= #FLOPPY
 
 ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
+MATH    =kernel/math/math.a
 LIBS	=lib/lib.a
 
 all: Image	
@@ -37,11 +38,15 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o init/main.o $(ARCHIVES) $(LIBS)
+tools/system: boot/head.o init/main.o $(ARCHIVES) $(MATH) $(LIBS)
 	$(LD) $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
+	$(MATH) \
 	$(LIBS) \
 	-o tools/system
+
+kernel/math/math.a:
+	make -C kernel/math
 
 kernel/kernel.o:
 	make -C kernel

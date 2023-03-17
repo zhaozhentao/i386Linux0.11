@@ -8,6 +8,18 @@ void int3(void);
 void overflow(void);
 void bounds(void);
 void invalid_op(void);
+void device_not_available(void);
+void double_fault(void);
+void coprocessor_segment_overrun(void);
+void invalid_TSS(void);
+void segment_not_present(void);
+void stack_segment(void);
+void general_protection(void);
+void page_fault(void);
+void coprocessor_error(void);
+void reserved(void);
+void parallel_interrupt(void);
+void irq13(void);
 
 void do_divide_error(long esp, long error_code) {
 
@@ -58,5 +70,6 @@ void trap_init(void) {
     set_system_gate(4, &overflow);             // 触发方式未知 最大 int 数值 + 1 不能触发 overflow 异常
     set_system_gate(5, &bounds);               // 边界溢出异常, 触发方式未知
     set_trap_gate(6, &invalid_op);
+    set_trap_gate(7, &device_not_available);
 }
 

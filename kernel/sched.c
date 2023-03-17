@@ -8,3 +8,8 @@ struct {
   short b;
 } stack_start = { & user_stack [PAGE_SIZE>>2] , 0x10 };
 
+// todo: this method
+void math_state_restore() {
+
+}
+
