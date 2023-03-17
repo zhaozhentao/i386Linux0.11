@@ -61,6 +61,10 @@ void do_segment_not_present(void) {
 
 }
 
+void do_stack_segment() {
+
+}
+
 void do_int3(
     long * esp,
     long error_code,
@@ -95,5 +99,6 @@ void trap_init(void) {
     set_trap_gate(11, &segment_not_present);
     set_trap_gate(12, &stack_segment);
     set_trap_gate(13, &general_protection);
+    set_trap_gate(14, &page_fault);
 }
 

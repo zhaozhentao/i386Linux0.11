@@ -10,7 +10,7 @@ CFLAGS	+= -I../include
 .c.s:
 	@$(CC) $(CFLAGS) -S -o $*.s $<
 
-OBJS = memory.o 
+OBJS = memory.o page.o
 
 all: mm.o
 
