@@ -49,6 +49,10 @@ void do_coprocessor_segment_overrun(long esp, long error_code) {
 
 }
 
+void do_invalid_TSS(long esp,long error_code) {
+
+}
+
 void do_int3(
     long * esp,
     long error_code,
@@ -79,5 +83,6 @@ void trap_init(void) {
     set_trap_gate(7, &device_not_available);   // 数学处理器不存在异常
     set_trap_gate(8, &double_fault);
     set_trap_gate(9, &coprocessor_segment_overrun);
+    set_trap_gate(10, &invalid_TSS);
 }
 

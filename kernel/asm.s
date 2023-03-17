@@ -1,5 +1,5 @@
 .global divide_error, debug, nmi, int3, overflow, bounds, invalid_op, double_fault
-.global coprocessor_segment_overrun
+.global coprocessor_segment_overrun, invalid_TSS
 
 divide_error:
   pushl $do_divide_error              # 将 do_divide_error 地址入栈,如果直接将这个地址放到寄存器里面，寄存器原来的数据就丢失了,所以先入栈,再交换到寄存器
@@ -97,4 +97,8 @@ error_code:
   popl  %ebx
   popl  %eax
   iret
+
+invalid_TSS:
+  pushl $do_invalid_TSS
+  jmp   error_code
 
