@@ -6,6 +6,7 @@ CFLAGS	+= -Iinclude
 ROOT_DEV= #FLOPPY
 
 ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
+DRIVERS =kernel/blk_drv/blk_drv.a
 MATH    =kernel/math/math.a
 LIBS	=lib/lib.a
 
@@ -38,15 +39,19 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o init/main.o $(ARCHIVES) $(MATH) $(LIBS)
+tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)
 	$(LD) $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
+	$(DRIVERS) \
 	$(MATH) \
 	$(LIBS) \
 	-o tools/system
 
 kernel/math/math.a:
 	make -C kernel/math
+
+kernel/blk_drv/blk_drv.a:
+	make -C kernel/blk_drv
 
 kernel/kernel.o: kernel/traps.c
 	make -C kernel

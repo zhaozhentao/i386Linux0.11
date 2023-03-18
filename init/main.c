@@ -1,5 +1,6 @@
 #include <linux/fs.h>
 
+extern void blk_dev_init(void);
 extern void mem_init(long start, long end);
 
 /*
@@ -36,6 +37,7 @@ void main(void)
 
     mem_init(main_memory_start,memory_end);
     trap_init();
+    blk_dev_init();
 
     for(;;);
 }
