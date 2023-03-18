@@ -6,7 +6,7 @@ CFLAGS	+= -Iinclude
 ROOT_DEV= #FLOPPY
 
 ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
-DRIVERS =kernel/blk_drv/blk_drv.a
+DRIVERS =kernel/blk_drv/blk_drv.a kernel/chr_drv/chr_drv.a
 MATH    =kernel/math/math.a
 LIBS	=lib/lib.a
 
@@ -52,6 +52,9 @@ kernel/math/math.a:
 
 kernel/blk_drv/blk_drv.a:
 	make -C kernel/blk_drv
+
+kernel/chr_drv/chr_drv.a:
+	make -C kernel/chr_drv
 
 kernel/kernel.o: kernel/traps.c
 	make -C kernel

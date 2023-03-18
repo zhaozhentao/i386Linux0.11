@@ -29,5 +29,5 @@ vsprintf.s vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h
 
 clean:
 	rm -f *.o
-	for i in blk_drv math; do make clean -C $$i; done
+	for i in blk_drv chr_drv math; do make clean -C $$i; done
 
