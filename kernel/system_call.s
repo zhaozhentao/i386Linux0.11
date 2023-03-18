@@ -1,4 +1,4 @@
-.global device_not_available, coprocessor_error
+.global device_not_available, coprocessor_error, parallel_interrupt
 
 # todo: this function
 ret_from_sys_call:
@@ -34,4 +34,11 @@ device_not_available:                       # 设备不存在或协处理器不�
   popl  %esi
   popl  %ebp
   ret                                       # 这里的 ret 是指跳转到 ret_from_sys_call
+
+parallel_interrupt:
+  pushl %eax
+  movb  $0x20, %al
+  outb  %al, $0x20
+  popl  %eax
+  iret
 
