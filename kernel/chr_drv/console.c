@@ -76,21 +76,18 @@ void con_init(void) {
             display_desc = "*MDA";
         }
     } else { // 彩色显示器
-		video_mem_start = 0xb8000;
-		video_port_reg	= 0x3d4;
-		video_port_val	= 0x3d5;
-		if ((ORIG_VIDEO_EGA_BX & 0xff) != 0x10)
-		{
-			video_type = VIDEO_TYPE_EGAC;
-			video_mem_end = 0xbc000;
-			display_desc = "EGAc";
-		}
-		else
-		{
-			video_type = VIDEO_TYPE_CGA;
-			video_mem_end = 0xba000;
-			display_desc = "*CGA";
-		}
+        video_mem_start = 0xb8000;
+        video_port_reg	= 0x3d4;
+        video_port_val	= 0x3d5;
+        if ((ORIG_VIDEO_EGA_BX & 0xff) != 0x10) {
+            video_type = VIDEO_TYPE_EGAC;
+            video_mem_end = 0xbc000;
+            display_desc = "EGAc";
+        } else {
+            video_type = VIDEO_TYPE_CGA;
+            video_mem_end = 0xba000;
+            display_desc = "*CGA";
+        }
     }
 
 	display_ptr = ((char *)video_mem_start) + video_size_row - 8;

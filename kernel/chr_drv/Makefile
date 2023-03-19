@@ -22,5 +22,5 @@ keyboard.s: kb.S
 serial.s serial.o: serial.c
 
 clean:
-	rm -f *.a *o
+	rm -f *.a *o keyboard.s
 
