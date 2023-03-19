@@ -9,11 +9,13 @@ CFLAGS	+= -I../../include
 .c.o:
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS = tty_io.o
+OBJS = tty_io.o serial.o
 
 chr_drv.a: $(OBJS)
 	$(AR) rcs chr_drv.a $(OBJS)
 	sync
+
+serial.s serial.o: serial.c
 
 clean:
 	rm -f *.a *o
