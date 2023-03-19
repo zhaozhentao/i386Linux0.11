@@ -9,6 +9,10 @@ __asm__ ("movw %%dx,%%ax\n\t" \
 	"o" (*(4+(char *) (gate_addr))), \
 	"d" ((char *) (addr)),"a" (0x00080000))
 
+// 注册中断
+#define set_intr_gate(n,addr) \
+	_set_gate(&idt[n],14,0,addr)
+
 #define set_trap_gate(n,addr) \
 	_set_gate(&idt[n],15,0,addr)
 
