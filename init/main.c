@@ -1,4 +1,5 @@
 #include <linux/tty.h>
+#include <asm/system.h>
 
 #include <linux/fs.h>
 
@@ -43,6 +44,7 @@ void main(void)
     blk_dev_init();
     chr_dev_init();
     tty_init();
+    sti();
 
     for(;;);
 }
