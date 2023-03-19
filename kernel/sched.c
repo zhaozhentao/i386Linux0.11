@@ -1,5 +1,7 @@
 #include <linux/sched.h>
 
+long startup_time=0;
+
 long user_stack [ PAGE_SIZE>>2 ] ;
 
 // 这里 0x10 是内核段选择符
