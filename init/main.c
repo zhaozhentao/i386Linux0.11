@@ -1,3 +1,5 @@
+#include <linux/tty.h>
+
 #include <linux/fs.h>
 
 extern void blk_dev_init(void);
@@ -40,6 +42,7 @@ void main(void)
     trap_init();
     blk_dev_init();
     chr_dev_init();
+    tty_init();
 
     for(;;);
 }
