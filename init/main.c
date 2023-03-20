@@ -80,6 +80,7 @@ void main(void)
     blk_dev_init();
     chr_dev_init();
     tty_init();
+    time_init();
     sti();
 
     for(;;);
