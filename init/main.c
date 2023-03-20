@@ -58,7 +58,7 @@ static void time_init(void)
 
 void main(void)
 {
-    char buf[4];
+    char buf[3];
     ROOT_DEV = ORIG_ROOT_DEV;
     drive_info = DRIVE_INFO;
     memory_end = (1 << 20) + (EXT_MEM_K << 10);
@@ -84,8 +84,7 @@ void main(void)
     time_init();
     buf[0] = 'h';
     buf[1] = 'i';
-    buf[2] = 127;
-    buf[3] = 'h';
+    buf[2] = 8;
     printk(buf);
 
     for(;;);

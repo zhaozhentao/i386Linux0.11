@@ -187,8 +187,13 @@ void con_write(struct tty_struct * tty) {
                     lf();
                 } else if (c == 13) {
                     cr();
-                } else if (c==ERASE_CHAR(tty)) {
+                } else if (c==ERASE_CHAR(tty)) { // 删除
                     del();
+                } else if (c == 8) { // 光标后退一格，但不删除内容
+                    if (x) {
+                        x--;
+                        pos -= 2;
+                    }
                 }
                 break;
         }
