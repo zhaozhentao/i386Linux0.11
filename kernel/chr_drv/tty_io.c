@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include <linux/tty.h>
 #include <asm/segment.h>
 
@@ -55,9 +57,24 @@ int tty_write(unsigned channel, char * buf, int nr) {
         while(nr > 0 && !FULL(tty->write_q)) {
             c = get_fs_byte(b);
             if (O_POST(tty)) {
+                if (c=='\r' && O_CRNL(tty))
+                    c='\n';
+                else if (c=='\n' && O_NLRET(tty))
+                    c='\r';
 
+                if (c=='\n' && !cr_flag && O_NLCR(tty)) {
+                    cr_flag = 1;
+                    PUTCH(13,tty->write_q);
+                    continue;
+                }
+
+                if (O_LCUC(tty))
+                    c=toupper(c);
             }
 
+            b++; nr--;
+            cr_flag = 0;
+            PUTCH(c,tty->write_q);
         }
     }
 

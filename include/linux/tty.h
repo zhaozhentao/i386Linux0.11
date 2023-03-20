@@ -9,10 +9,16 @@ struct tty_queue {
     unsigned long data;
     unsigned long head;
     unsigned long tail;
+    char buf[TTY_BUF_SIZE];
 };
 
+#define INC(a) ((a) = ((a)+1) & (TTY_BUF_SIZE-1))
 #define LEFT(a) (((a).tail-(a).head-1)&(TTY_BUF_SIZE-1))
 #define FULL(a) (!LEFT(a))
+#define GETCH(queue,c) \
+(void)({c=(queue).buf[(queue).tail];INC((queue).tail);})
+#define PUTCH(c,queue) \
+(void)({(queue).buf[(queue).head]=(c);INC((queue).head);})
 
 struct tty_struct {
     struct termios termios;

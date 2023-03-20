@@ -2,7 +2,7 @@ include ../Makefile.header
 
 CFLAGS	+= -I../include
 
-OBJS = string.o
+OBJS = ctype.o string.o
 
 .c.s:
 	@$(CC) $(CFLAGS) -S -o $*.s $<
