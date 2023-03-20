@@ -24,3 +24,8 @@ void rs_init(void) {
     outb(inb_p(0x21)&0xE7,0x21);   /* 允许 8259A 响应IRQ3 IRQ4 中断 */
 }
 
+// todo: empty function
+void rs_write(struct tty_struct * tty) {
+
+}
+

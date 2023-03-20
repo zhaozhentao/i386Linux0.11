@@ -50,6 +50,12 @@ static inline void gotoxy(unsigned int new_x,unsigned int new_y) {
 	pos=origin + y*video_size_row + (x<<1);
 }
 
+void con_write(struct tty_struct * tty) {
+    int nr;
+    char c;
+
+}
+
 void con_init(void) {
     register unsigned char a;
     char *display_desc = "????";

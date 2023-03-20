@@ -28,13 +28,37 @@
 
 struct tty_struct tty_table[] = {
     {
-        {0,0,0}                     /* console */
+        {ICRNL,		/* change incoming CR to NL */
+        OPOST|ONLCR,	/* change outgoing NL to CRNL */
+        0,
+        ISIG | ICANON | ECHO | ECHOCTL | ECHOKE,
+        0,		/* console termio */
+        INIT_C_CC},
+        con_write,
+        {0,0,0,""},                     /* console */
+        {0,0,0,""}                      /* console write-queue */
     },
     {
-        {0x3f8,0,0}                 /* rs 1 read_q, struct tty_queue data, head, tail */
+        {0, /* no translation */
+        0,  /* no translation */
+        B2400 | CS8,
+        0,
+        0,
+        INIT_C_CC},
+        rs_write,
+        {0x3f8,0,0,""},                 /* rs 1 read_q, struct tty_queue data, head, tail */
+        {0x3f8,0,0,""}
     },
     {
-        {0x2f8,0,0}                 /* rs 2 read_q, struct tty_queue data, head, tail */
+        {0, /* no translation */
+        0,  /* no translation */
+        B2400 | CS8,
+        0,
+        0,
+        INIT_C_CC},
+        rs_write,
+        {0x2f8,0,0,""},                 /* rs 2 read_q, struct tty_queue data, head, tail */
+        {0x2f8,0,0,""}
     }
 };
 
@@ -76,6 +100,8 @@ int tty_write(unsigned channel, char * buf, int nr) {
             cr_flag = 0;
             PUTCH(c,tty->write_q);
         }
+
+        tty->write(tty);
     }
 
     return (b-buf);
