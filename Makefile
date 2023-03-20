@@ -56,7 +56,7 @@ kernel/blk_drv/blk_drv.a:
 kernel/chr_drv/chr_drv.a:
 	make -C kernel/chr_drv
 
-kernel/kernel.o: kernel/traps.c
+kernel/kernel.o: kernel/*.c
 	make -C kernel
 
 start: Image
