@@ -21,6 +21,8 @@ struct tty_queue {
 #define PUTCH(c,queue) \
 (void)({(queue).buf[(queue).head]=(c);INC((queue).head);})
 
+#define ERASE_CHAR(tty) ((tty)->termios.c_cc[VERASE])
+
 struct tty_struct {
     struct termios termios;
     void (*write)(struct tty_struct * tty);

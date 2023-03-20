@@ -137,8 +137,17 @@ static void lf(void)
 
 static void cr(void)
 {
-	pos -= x<<1;
-	x=0;
+    pos -= x<<1;
+    x=0;
+}
+
+static void del(void)
+{
+    if (x) {
+        pos -= 2;
+        x--;
+        *(unsigned short *)pos = video_erase_char;
+    }
 }
 
 static inline void set_cursor(void)
@@ -178,6 +187,8 @@ void con_write(struct tty_struct * tty) {
                     lf();
                 } else if (c == 13) {
                     cr();
+                } else if (c==ERASE_CHAR(tty)) {
+                    del();
                 }
                 break;
         }
