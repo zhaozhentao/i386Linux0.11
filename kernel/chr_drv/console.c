@@ -43,6 +43,8 @@ static unsigned long	npar,par[NPAR];
 static unsigned long	ques=0;
 static unsigned char	attr=0x07;
 
+static void sysbeep(void);
+
 static inline void gotoxy(unsigned int new_x,unsigned int new_y) {
 	if (new_x > video_num_columns || new_y >= video_num_lines)
 		return;
@@ -204,6 +206,8 @@ void con_write(struct tty_struct * tty) {
                         lf();
                     }
                     c=9;
+                } else if (c==7) {
+                    sysbeep();
                 }
                 break;
         }
@@ -269,5 +273,20 @@ void con_init(void) {
 	a=inb_p(0x61);
 	outb_p(a|0x80,0x61);
 	outb(a,0x61);
+}
+
+int beepcount = 0;
+
+static void sysbeep(void)
+{
+    /* enable counter 2 */
+    outb_p(inb_p(0x61)|3, 0x61);
+    /* set command for counter 2, 2 byte write */
+    outb_p(0xB6, 0x43);
+    /* send 0x637 for 750 HZ */
+    outb_p(0x37, 0x42);
+    outb(0x06, 0x42);
+    /* 1/8 second */
+    beepcount = HZ/8;
 }
 

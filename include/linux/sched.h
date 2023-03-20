@@ -1,6 +1,8 @@
 #ifndef _SCHED_H
 #define _SCHED_H
 
+#define HZ 100
+
 #include <linux/head.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
