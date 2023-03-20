@@ -194,6 +194,16 @@ void con_write(struct tty_struct * tty) {
                         x--;
                         pos -= 2;
                     }
+                } else if (c == 9) { // 水平制表符号
+                    c=8-(x&7);
+                    x += c;
+                    pos += c<<1;
+                    if (x>video_num_columns) {
+                        x -= video_num_columns;
+                        pos -= video_size_row;
+                        lf();
+                    }
+                    c=9;
                 }
                 break;
         }
