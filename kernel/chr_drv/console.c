@@ -126,6 +126,39 @@ static void scrup(void)
     }
 }
 
+static void scrdown(void)
+{
+    if (video_type == VIDEO_TYPE_EGAC || video_type == VIDEO_TYPE_EGAM)
+    {
+        __asm__("std\n\t"
+            "rep\n\t"
+            "movsl\n\t"
+            "addl $2,%%edi\n\t"	/* %edi has been decremented by 4 */
+            "movl video_num_columns,%%ecx\n\t"
+            "rep\n\t"
+            "stosw"
+            ::"a" (video_erase_char),
+            "c" ((bottom-top-1)*video_num_columns>>1),
+            "D" (origin+video_size_row*bottom-4),
+            "S" (origin+video_size_row*(bottom-1)-4)
+            );
+    }
+    else		/* Not EGA/VGA */
+    {
+        __asm__("std\n\t"
+            "rep\n\t"
+            "movsl\n\t"
+            "addl $2,%%edi\n\t"	/* %edi has been decremented by 4 */
+            "movl video_num_columns,%%ecx\n\t"
+            "rep\n\t"
+            "stosw"
+            ::"a" (video_erase_char),
+            "c" ((bottom-top-1)*video_num_columns>>1),
+            "D" (origin+video_size_row*bottom-4),
+            "S" (origin+video_size_row*(bottom-1)-4)
+            );
+    }
+}
 
 static void lf(void)
 {
@@ -135,6 +168,16 @@ static void lf(void)
         return;
     }
     scrup();
+}
+
+static void ri(void)
+{
+    if (y>top) {
+        y--;
+        pos -= video_size_row;
+        return;
+    }
+    scrdown();
 }
 
 static void cr(void)
@@ -160,6 +203,20 @@ static inline void set_cursor(void)
     outb_p(15, video_port_reg);
     outb_p(0xff&((pos-video_mem_start)>>1), video_port_val);
     sti();
+}
+
+static int saved_x=0;
+static int saved_y=0;
+
+static void save_cur(void)
+{
+    saved_x=x;
+    saved_y=y;
+}
+
+static void restore_cur(void)
+{
+    gotoxy(saved_x, saved_y);
 }
 
 void con_write(struct tty_struct * tty) {
@@ -209,6 +266,23 @@ void con_write(struct tty_struct * tty) {
                 } else if (c==7) {
                     sysbeep();
                 }
+                break;
+            case 1:
+                state=0;
+                if (c=='[')
+                    state=2;
+                else if (c=='E')
+                    gotoxy(0,y+1);
+                else if (c=='M')
+                    ri();
+                else if (c=='D')
+                    lf();
+                //else if (c=='Z')
+                //    respond(tty);
+                else if (x=='7')
+                    save_cur();
+                else if (x=='8')
+                    restore_cur();
                 break;
         }
     }
