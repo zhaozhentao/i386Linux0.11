@@ -135,6 +135,15 @@ static void lf(void)
     scrup();
 }
 
+static inline void set_cursor(void)
+{
+    cli();
+    outb_p(14, video_port_reg);
+    outb_p(0xff&((pos-video_mem_start)>>9), video_port_val);
+    outb_p(15, video_port_reg);
+    outb_p(0xff&((pos-video_mem_start)>>1), video_port_val);
+    sti();
+}
 
 void con_write(struct tty_struct * tty) {
     int nr;
@@ -160,6 +169,8 @@ void con_write(struct tty_struct * tty) {
                 }
         }
     }
+
+    set_cursor();   // 打印完成更新光标位置
 }
 
 void con_init(void) {
