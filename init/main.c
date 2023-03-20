@@ -81,8 +81,7 @@ void main(void)
     chr_dev_init();
     tty_init();
     time_init();
-    sti();
-    printk("hi");
+    printk("hi\n");
 
     for(;;);
 }

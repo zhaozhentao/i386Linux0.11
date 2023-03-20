@@ -135,6 +135,12 @@ static void lf(void)
     scrup();
 }
 
+static void cr(void)
+{
+	pos -= x<<1;
+	x=0;
+}
+
 static inline void set_cursor(void)
 {
     cli();
@@ -166,7 +172,14 @@ void con_write(struct tty_struct * tty) {
                         );
                     pos += 2;
                     x++;
+                } else if (c == 27) {  // esc
+                    state=1;
+                } else if (c==10 || c==11 || c==12) {
+                    lf();
+                } else if (c == 13) {
+                    cr();
                 }
+                break;
         }
     }
 
