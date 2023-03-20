@@ -82,6 +82,7 @@ void main(void)
     tty_init();
     time_init();
     sti();
+    printk("hi");
 
     for(;;);
 }

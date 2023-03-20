@@ -1,4 +1,5 @@
 #include <linux/sched.h>
+#include <linux/tty.h>
 #include <asm/io.h>
 #include <asm/system.h>
 
@@ -50,10 +51,115 @@ static inline void gotoxy(unsigned int new_x,unsigned int new_y) {
 	pos=origin + y*video_size_row + (x<<1);
 }
 
+static inline void set_origin(void)
+{
+    cli();
+    outb_p(12, video_port_reg);
+    outb_p(0xff&((origin-video_mem_start)>>9), video_port_val);
+    outb_p(13, video_port_reg);
+    outb_p(0xff&((origin-video_mem_start)>>1), video_port_val);
+    sti();
+}
+
+static void scrup(void)
+{
+    if (video_type == VIDEO_TYPE_EGAC || video_type == VIDEO_TYPE_EGAM)
+    {
+        if (!top && bottom == video_num_lines) {
+            origin += video_size_row;
+            pos += video_size_row;
+            scr_end += video_size_row;
+            if (scr_end > video_mem_end) {
+                __asm__("cld\n\t"
+                "rep\n\t"
+                "movsl\n\t"
+                "movl video_num_columns,%1\n\t"
+                "rep\n\t"
+                "stosw"
+                ::"a" (video_erase_char),
+                "c" ((video_num_lines-1)*video_num_columns>>1),
+                "D" (video_mem_start),
+                "S" (origin)
+                );
+                scr_end -= origin-video_mem_start;
+                pos -= origin-video_mem_start;
+                origin = video_mem_start;
+            } else {
+                __asm__("cld\n\t"
+                    "rep\n\t"
+                    "stosw"
+                    ::"a" (video_erase_char),
+                    "c" (video_num_columns),
+                    "D" (scr_end-video_size_row)
+                    );
+            }
+            set_origin();
+        } else {
+            __asm__("cld\n\t"
+                "rep\n\t"
+                "movsl\n\t"
+                "movl video_num_columns,%%ecx\n\t"
+                "rep\n\t"
+                "stosw"
+                ::"a" (video_erase_char),
+                "c" ((bottom-top-1)*video_num_columns>>1),
+                "D" (origin+video_size_row*top),
+                "S" (origin+video_size_row*(top+1))
+                );
+        }
+    }
+    else		/* Not EGA/VGA */
+    {
+        __asm__("cld\n\t"
+            "rep\n\t"
+            "movsl\n\t"
+            "movl video_num_columns,%%ecx\n\t"
+            "rep\n\t"
+            "stosw"
+            ::"a" (video_erase_char),
+            "c" ((bottom-top-1)*video_num_columns>>1),
+            "D" (origin+video_size_row*top),
+            "S" (origin+video_size_row*(top+1))
+            );
+    }
+}
+
+
+static void lf(void)
+{
+    if (y+1<bottom) {
+        y++;
+        pos += video_size_row;
+        return;
+    }
+    scrup();
+}
+
+
 void con_write(struct tty_struct * tty) {
     int nr;
     char c;
 
+    nr = CHARS(tty->write_q);
+    while (nr--) {
+        GETCH(tty->write_q,c);
+        switch (state) {
+            case 0:
+                if (c > 31 && c < 127) {
+                    if (x>=video_num_columns) {
+                        x -= video_num_columns;
+                        pos -= video_size_row;
+                        lf();
+                    }
+                    __asm__("movb attr,%%ah\n\t"
+                        "movw %%ax,%1\n\t"
+                        ::"a" (c),"m" (*(short *)pos)
+                        );
+                    pos += 2;
+                    x++;
+                }
+        }
+    }
 }
 
 void con_init(void) {

@@ -15,6 +15,7 @@ struct tty_queue {
 #define INC(a) ((a) = ((a)+1) & (TTY_BUF_SIZE-1))
 #define LEFT(a) (((a).tail-(a).head-1)&(TTY_BUF_SIZE-1))
 #define FULL(a) (!LEFT(a))
+#define CHARS(a) (((a).head-(a).tail)&(TTY_BUF_SIZE-1))
 #define GETCH(queue,c) \
 (void)({c=(queue).buf[(queue).tail];INC((queue).tail);})
 #define PUTCH(c,queue) \

@@ -1,4 +1,5 @@
 #define sti() __asm__ ("sti"::)
+#define cli() __asm__ ("cli"::)
 
 #define _set_gate(gate_addr,type,dpl,addr) \
 __asm__ ("movw %%dx,%%ax\n\t" \
