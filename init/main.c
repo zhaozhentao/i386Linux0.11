@@ -82,10 +82,7 @@ void main(void)
     chr_dev_init();
     tty_init();
     time_init();
-    buf[0] = 'h';
-    buf[1] = 7;
-    buf[2] = 'i';
-    printk(buf);
+    sched_init();
 
     for(;;);
 }

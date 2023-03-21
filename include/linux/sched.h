@@ -8,6 +8,7 @@
 #include <linux/mm.h>
 #include <signal.h>
 
+extern void sched_init(void);
 extern void trap_init(void);
 
 struct i387_struct {
@@ -78,6 +79,37 @@ struct task_struct {
 /* tss for this task */
 	struct tss_struct tss;
 };
+
+/*
+ *  INIT_TASK is used to set up the first task table, touch at
+ * your own risk!. Base=0, limit=0x9ffff (=640kB)
+ */
+#define INIT_TASK \
+/* state etc */	{ 0,15,15, \
+/* signals */	0,{{},},0, \
+/* ec,brk... */	0,0,0,0,0,0, \
+/* pid etc.. */	0,-1,0,0,0, \
+/* uid etc */	0,0,0,0,0,0, \
+/* alarm */	0,0,0,0,0,0, \
+/* math */	0, \
+/* fs info */	-1,0022,NULL,NULL,NULL,0, \
+/* filp */	{NULL,}, \
+	{ \
+		{0,0}, \
+/* ldt */	{0x9f,0xc0fa00}, \
+		{0x9f,0xc0f200}, \
+	}, \
+/*tss*/	{0,PAGE_SIZE+(long)&init_task,0x10,0,0,0,0,(long)&pg_dir,\
+	 0,0,0,0,0,0,0,0, \
+	 0,0,0x17,0x17,0x17,0x17,0x17,0x17, \
+	 _LDT(0),0x80000000, \
+		{} \
+	}, \
+}
+
+#define FIRST_TSS_ENTRY 4
+#define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
+#define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
 
 #endif
 
