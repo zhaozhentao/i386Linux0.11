@@ -1,4 +1,8 @@
-.global device_not_available, coprocessor_error, parallel_interrupt
+.global device_not_available, coprocessor_error, parallel_interrupt, system_call, timer_interrupt
+
+# todo: this function
+.align 2
+system_call:
 
 # todo: this function
 ret_from_sys_call:
@@ -34,6 +38,10 @@ device_not_available:                       # 设备不存在或协处理器不�
   popl  %esi
   popl  %ebp
   ret                                       # 这里的 ret 是指跳转到 ret_from_sys_call
+
+# todo this 中断
+.align 2
+timer_interrupt:
 
 parallel_interrupt:
   pushl %eax
