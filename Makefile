@@ -71,7 +71,7 @@ stop:
 
 clean:
 	rm -f Image system.dis init/*.o *.debug
-	for i in boot kernel lib mm; do make clean -C $$i; done
+	for i in boot kernel lib mm fs; do make clean -C $$i; done
 
 init/main.o: init/main.c
 

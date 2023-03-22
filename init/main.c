@@ -83,6 +83,7 @@ void main(void)
     tty_init();
     time_init();
     sched_init();
+    buffer_init(buffer_memory_end);
 
     for(;;);
 }

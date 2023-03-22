@@ -10,12 +10,14 @@ CFLAGS	+= -I../include
 .s.o:
 	$(AS) -o $*.o $<
 
-OBJS= super.o
+OBJS= super.o buffer.o
 
 fs.o: $(OBJS)
 	@$(LD) $(LDFLAGS) -o fs.o $(OBJS)
 
 super.o: super.c
+
+buffer.o: buffer.c
 
 clean:
 	rm -f *.o
