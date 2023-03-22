@@ -14,6 +14,7 @@ all: Image
 
 Image: boot/bootsect boot/setup tools/system
 	cp -f tools/system system.tmp
+	$(OBJCOPY) --only-keep-debug tools/system system.debug
 	$(STRIP) system.tmp
 	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image $(ROOT_DEV)
@@ -46,8 +47,6 @@ tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)
 	$(MATH) \
 	$(LIBS) \
 	-o tools/system
-	cp tools/system tools/debug
-	$(OBJCOPY) --only-keep-debug tools/debug system.debug
 
 kernel/math/math.a:
 	make -C kernel/math
