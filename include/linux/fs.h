@@ -19,10 +19,15 @@ struct buffer_head {
 };
 
 #define NR_OPEN 20
+#define NR_HASH 307
+#define NR_BUFFERS nr_buffers
+#define BLOCK_SIZE 1024
 
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif
+
+extern int nr_buffers;
 
 extern int ROOT_DEV;
 
