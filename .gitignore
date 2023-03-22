@@ -3,4 +3,4 @@ Image
 system.tmp
 *.dis
 *.debug
-
+*.map

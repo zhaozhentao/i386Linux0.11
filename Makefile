@@ -47,6 +47,7 @@ tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)
 	$(MATH) \
 	$(LIBS) \
 	-o tools/system
+	nm tools/system | grep -v '\(compiled\)\|\(\.o$$\)\|\( [aU] \)\|\(\.\.ng$$\)\|\(LASH[RL]DI\)'| sort > System.map
 
 kernel/math/math.a:
 	make -C kernel/math
