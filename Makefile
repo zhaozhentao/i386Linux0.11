@@ -40,12 +40,14 @@ boot/head.o: boot/head.s
 	make head.o -C boot
 
 tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)
-	$(LD) $(LDFLAGS) boot/head.o init/main.o \
+	$(LD) -g $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	$(DRIVERS) \
 	$(MATH) \
 	$(LIBS) \
 	-o tools/system
+	cp tools/system tools/debug
+	$(OBJCOPY) --only-keep-debug tools/debug system.debug
 
 kernel/math/math.a:
 	make -C kernel/math
