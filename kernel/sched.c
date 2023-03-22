@@ -39,6 +39,8 @@ void sched_init(void) {
         p->a=p->b=0;
         p++;
     }
-
+    __asm__("pushfl ; andl $0xffffbfff,(%esp) ; popfl");
+    ltr(0);
+    lldt(0);
 }
 
