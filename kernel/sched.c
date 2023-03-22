@@ -28,5 +28,6 @@ void sched_init(void) {
     struct desc_struct * p;
 
     set_tss_desc(gdt+FIRST_TSS_ENTRY,&(init_task.task.tss));
+    set_ldt_desc(gdt+FIRST_LDT_ENTRY,&(init_task.task.ldt));
 }
 

@@ -70,7 +70,7 @@ stop:
 	@kill -9 $$(ps -ef | grep qemu-system-i386 | awk '{print $$2}')
 
 clean:
-	rm -f Image system.dis init/*.o
+	rm -f Image system.dis init/*.o *.debug
 	for i in boot kernel lib mm; do make clean -C $$i; done
 
 init/main.o: init/main.c
