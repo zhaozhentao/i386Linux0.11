@@ -17,7 +17,30 @@ struct request {
 	struct request * next;                    /* 下一个请求项 */
 };
 
+struct blk_dev_struct {
+	void (*request_fn)(void);
+	struct request * current_request;
+};
+
+extern struct blk_dev_struct blk_dev[NR_BLK_DEV];
 extern struct request request[NR_REQUEST];
+
+#ifdef MAJOR_NR
+
+#if (MAJOR_NR == 1)
+
+#elif (MAJOR_NR == 2)
+
+#elif (MAJOR_NR == 3)
+#define DEVICE_REQUEST do_hd_request
+
+#else
+/* unknown blk device */
+#error "unknown blk device"
+
+#endif
+
+#endif                                      /* ifdef MAJOR_NR */
 
 #endif
 

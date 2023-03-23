@@ -8,8 +8,8 @@
 
 extern void blk_dev_init(void);
 extern void chr_dev_init(void);
+extern void hd_init(void);
 extern void mem_init(long start, long end);
-
 extern long kernel_mktime(struct tm * tm);
 extern long startup_time;
 
@@ -84,6 +84,7 @@ void main(void)
     time_init();
     sched_init();
     buffer_init(buffer_memory_end);
+    hd_init();
 
     for(;;);
 }

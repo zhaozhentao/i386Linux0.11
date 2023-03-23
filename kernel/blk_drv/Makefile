@@ -9,7 +9,7 @@ CFLAGS	+= -I../../include
 .c.o:
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = ll_rw_blk.o
+OBJS  = ll_rw_blk.o hd.o
 
 blk_drv.a: $(OBJS)
 	$(AR) rcs blk_drv.a $(OBJS)
