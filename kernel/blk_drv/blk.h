@@ -30,6 +30,7 @@ extern struct request request[NR_REQUEST];
 #if (MAJOR_NR == 1)
 
 #elif (MAJOR_NR == 2)
+#define DEVICE_REQUEST do_fd_request
 
 #elif (MAJOR_NR == 3)
 #define DEVICE_REQUEST do_hd_request
