@@ -1,4 +1,4 @@
-.global device_not_available, coprocessor_error, parallel_interrupt, system_call, timer_interrupt
+.global device_not_available, coprocessor_error, parallel_interrupt, system_call, timer_interrupt, hd_interrupt
 
 # todo: this function
 .align 2
@@ -42,6 +42,8 @@ device_not_available:                       # 设备不存在或协处理器不�
 # todo this 中断
 .align 2
 timer_interrupt:
+
+hd_interrupt:
 
 parallel_interrupt:
   pushl %eax
