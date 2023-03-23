@@ -87,6 +87,7 @@ void main(void)
     buffer_init(buffer_memory_end);
     hd_init();
     floppy_init();
+    sti();
 
     for(;;);
 }
