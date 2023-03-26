@@ -1,6 +1,0 @@
-bootsect
-*.o 
-*_elf
-*.dis
-setup
-
