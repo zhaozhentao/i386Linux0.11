@@ -10,5 +10,5 @@ bootsect: bootsect.s
 	$(OBJDUMP) -D -m i386 bootsect_elf > bootsect.dis
 
 clean:
-	rm -f *.o *_elf bootsect
+	rm -f *.o *_elf *.dis bootsect
 
