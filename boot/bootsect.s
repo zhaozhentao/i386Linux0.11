@@ -17,6 +17,12 @@ _start:
   ljmp $INITSEG, $go                  # 段间跳转，这里 INITSEG 指出跳转到的段地址，跳转后 cs 代码段寄存器的值为0x9000
 
 go:
+  mov  %cs, %ax                       # 将 ds，es，ss 都设置成移动后代码所在的段处 (0x9000),因为跳转到 go 后 cs 寄存器自动被设置为 9000
+  mov  %ax, %ds
+  mov  %ax, %es
+# put stack at 0x9ff00.               # 栈指针通过 ss:sp 确定
+  mov  %ax, %ss
+  mov  $0xFF00, %sp                   # 因为栈指针通过 ss << 4 + sp 确定，所以执行完这条指令后，栈指向 0x9ff00
 
 # 利用 BIOS 打印 IceCityOS is booting ...
 # BIOS 中的打印程序会根据当前的 es 附加段寄存器和 bp 寄存器保存的偏移值去寻找 msg1 位置然后打印
