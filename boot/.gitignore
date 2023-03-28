@@ -1,4 +1,5 @@
 *.o
 *_elf
 bootsect
+setup
 
