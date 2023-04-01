@@ -15,6 +15,9 @@ setup: setup.s
 	$(OBJCOPY) -R .pdr -R .comment -R .note -O binary -S setup_elf setup
 	$(OBJDUMP) -D -m i386 setup_elf > setup.dis
 
+head.o: head.s
+	@$(AS) -o head.o head.s
+
 clean:
 	rm -f *.o *_elf *.dis bootsect setup
 
