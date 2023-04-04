@@ -2,6 +2,8 @@ include Makefile.header
 
 LDFLAGS	+= -Ttext 0 -e startup_32
 
+ARCHIVES=kernel/kernel.o
+
 all: Image
 
 Image: boot/bootsect boot/setup tools/system
@@ -19,9 +21,13 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o
+tools/system: boot/head.o $(ARCHIVES)
 	$(LD) -g $(LDFLAGS) boot/head.o \
+	$(ARCHIVES) \
 	-o tools/system
+
+kernel/kernel.o: kernel/*.c
+	make -C kernel
 
 start: Image
 	qemu-system-i386 -m 16M -boot a -fda Image -curses
@@ -34,5 +40,5 @@ stop:
 
 clean:
 	rm -f Image
-	for i in boot; do make clean -C $$i; done
+	for i in boot kernel; do make clean -C $$i; done
 
