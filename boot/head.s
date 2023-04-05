@@ -10,6 +10,13 @@ startup_32:
   lss   stack_start, %esp               # 这里设置一下栈，stack_start 定义在 kernel/sched.c 中, 这个指令将 stack_start 中的 a 赋值 esp 寄存器, b 赋值 ss 寄存器, 其中 a 是 user_stack 地址, b 是段选择符
   call  setup_idt                       # 设置 idt 中断描述符表
   call  setup_gdt                       # 设置 gdt 全局描述符表
+  movl  $0x10, %eax                     # 修改完 gdt 后，需要重新加载一下段寄存器
+  mov   %ax,   %ds
+  mov   %ax,   %es
+  mov   %ax,   %fs
+  mov   %ax,   %gs
+  lss   stack_start, %esp
+  xorl  %eax, %eax
 
 # setup_idt 需要结合中断描述符的格式去看
 # 一个中断描述符由 8 个字节组成, 这里选用edx 和 eax 寄存器存放,格式如下

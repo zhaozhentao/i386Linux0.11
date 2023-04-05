@@ -11,6 +11,7 @@ Image: boot/bootsect boot/setup tools/system
 	$(STRIP) system.tmp
 	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image
+	$(OBJDUMP) -D -m i386 tools/system > system.dis
 
 boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
