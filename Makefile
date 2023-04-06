@@ -40,7 +40,7 @@ stop:
 	@kill -9 $$(ps -ef | grep qemu-system-i386 | awk '{print $$2}')
 
 clean:
-	rm -f Image
+	rm -f Image *.dis *.tmp
 	for i in boot kernel; do make clean -C $$i; done
 
 init/main.o: init/main.c
