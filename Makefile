@@ -22,8 +22,8 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o $(ARCHIVES)
-	$(LD) -g $(LDFLAGS) boot/head.o \
+tools/system: boot/head.o init/main.o $(ARCHIVES)
+	$(LD) -g $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	-o tools/system
 
@@ -42,4 +42,6 @@ stop:
 clean:
 	rm -f Image
 	for i in boot kernel; do make clean -C $$i; done
+
+init/main.o: init/main.c
 
