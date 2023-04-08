@@ -3,6 +3,7 @@ include Makefile.header
 LDFLAGS	+= -Ttext 0 -e startup_32
 
 ARCHIVES=kernel/kernel.o
+DRIVERS=kernel/chr_drv/chr_drv.a
 
 all: Image
 
@@ -22,10 +23,14 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o init/main.o $(ARCHIVES)
+tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS)
 	$(LD) -g $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
+	$(DRIVERS) \
 	-o tools/system
+
+kernel/chr_drv/chr_drv.a:
+	make -C kernel/chr_drv
 
 kernel/kernel.o: kernel/*.c
 	make -C kernel

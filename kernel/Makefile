@@ -23,3 +23,5 @@ sched.o: sched.c
 
 clean:
 	rm -f *.o
+	for i in chr_drv; do make clean -C $$i; done
+
