@@ -13,13 +13,17 @@ CFLAGS	+= -I../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = sched.o
+OBJS  = sched.o printk.o vsprintf.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
 	sync
 
 sched.o: sched.c
+
+printk.o: printk.c ../include/stdarg.h
+
+vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h
 
 clean:
 	rm -f *.o

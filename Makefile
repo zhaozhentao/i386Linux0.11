@@ -4,6 +4,7 @@ LDFLAGS	+= -Ttext 0 -e startup_32
 
 ARCHIVES=kernel/kernel.o
 DRIVERS=kernel/chr_drv/chr_drv.a
+LIBS	=lib/lib.a
 
 all: Image
 
@@ -15,6 +16,9 @@ Image: boot/bootsect boot/setup tools/system
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image
 	$(OBJDUMP) -D -m i386 tools/system > system.dis
 
+lib/lib.a:
+	make -C lib
+
 boot/bootsect: boot/bootsect.s
 	make bootsect -C boot
 
@@ -24,10 +28,11 @@ boot/setup: boot/setup.s
 boot/head.o: boot/head.s
 	make head.o -C boot
 
-tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS)
+tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(LIBS)
 	$(LD) -g $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	$(DRIVERS) \
+	$(LIBS) \
 	-o tools/system
 
 kernel/chr_drv/chr_drv.a:
@@ -47,7 +52,7 @@ stop:
 
 clean:
 	rm -f Image *.dis *.tmp
-	for i in boot kernel; do make clean -C $$i; done
+	for i in boot kernel lib; do make clean -C $$i; done
 
 init/main.o: init/main.c
 
