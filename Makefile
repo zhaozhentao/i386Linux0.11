@@ -9,6 +9,7 @@ all: Image
 
 Image: boot/bootsect boot/setup tools/system
 	cp -f tools/system system.tmp
+	$(OBJCOPY) --only-keep-debug tools/system system.debug
 	$(STRIP) system.tmp
 	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image
