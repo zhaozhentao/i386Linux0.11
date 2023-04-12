@@ -1,3 +1,5 @@
+#include <linux/tty.h>
+
 #define ORIG_X              (*(unsigned char *)0x90000)                          // 光标位置 x
 #define ORIG_Y              (*(unsigned char *)0x90001)                          // 光标位置 y
 #define ORIG_VIDEO_MODE     ((*(unsigned short *)0x90006) & 0xff)                // 显示模式
@@ -12,6 +14,7 @@ static unsigned long    video_mem_start;                                        
 static unsigned long    origin;
 static unsigned long	pos;
 static unsigned long    x,y;
+static unsigned long	state=0;
 static unsigned char	attr=0x07;
 
 static inline void gotoxy(unsigned int new_x, unsigned int new_y) {
@@ -23,17 +26,25 @@ static inline void gotoxy(unsigned int new_x, unsigned int new_y) {
     pos = origin + y * video_size_row + (x << 1);
 }
 
-void con_write(void) {
-    char *message = "hello kernel";
+void con_write(struct tty_struct * tty) {
+    int nr;
+    char c;
 
-    gotoxy(ORIG_X, ORIG_Y);
+    nr = CHARS(tty->write_q);
 
-    for (int i = 0; i < 12; i++) {
-        __asm__("movb attr,%%ah\n\t"
-        "movw %%ax,%1\n\t"
-        ::"a" (message[i]),"m" (*(short *) pos)
-        );
-        pos += 2;
+    while (nr--) {
+        GETCH(tty->write_q,c);
+        switch (state) {
+            case 0:
+                if (c > 31 && c < 127) {
+                    __asm__("movb attr,%%ah\n\t"
+                        "movw %%ax,%1\n\t"
+                        ::"a" (c),"m" (*(short *)pos)
+                        );
+                    pos += 2;
+                }
+                break;
+        }
     }
 }
 
