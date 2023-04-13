@@ -9,7 +9,7 @@ CFLAGS	+= -I../include
 .c.o:
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = string.o
+OBJS  = ctype.o string.o
 
 lib.a: $(OBJS)
 	$(AR) rcs lib.a $(OBJS)

@@ -1,8 +1,6 @@
-extern void con_init(void);
-extern void con_write(void);
+extern int printk(const char *fmt, ...);
 
 void main(void) {
-    con_init();
-    con_write();
+    printk("hello\n");
 }
 
