@@ -45,42 +45,37 @@ struct tty_struct tty_table[] = {
 };
 
 int tty_write(unsigned channel, char * buf, int nr) {
-    char c, *b = buf;
     static int cr_flag = 0;
+    struct tty_struct *tty;
+    char c, *b = buf;
 
-    return 0;
+    if (channel > 2 || nr < 0) return -1;
 
-//    static int cr_flag = 0;
-//    struct tty_struct *tty;
-//    char c, *b = buf;
-//
-//    if (channel > 2 || nr < 0) return -1;
-//
-//    tty = channel + tty_table;
-//    while (nr > 0) {
-//        while (nr > 0 && !FULL(tty->write_q)) {
-//            c = get_fs_byte(b);
-//            if (O_POST(tty)) {
-//                if (c=='\r' && O_CRNL(tty))
-//                    c='\n';
-//                else if (c=='\n' && O_NLRET(tty))
-//                    c='\r';
-//                if (c=='\n' && !cr_flag && O_NLCR(tty)) {
-//                    cr_flag = 1;
-//                    PUTCH(13,tty->write_q);
-//                    continue;
-//                }
-//                if (O_LCUC(tty))
-//                    c=toupper(c);
-//            }
-//            b++; 
-//            nr--;
-//            cr_flag = 0;
-//            PUTCH(c,tty->write_q);
-//        }
-//        tty->write(tty);
-//    }
-//
-//    return (b - buf);
+    tty = channel + tty_table;
+    while (nr > 0) {
+        while (nr > 0 && !FULL(tty->write_q)) {
+            c = get_fs_byte(b);
+            if (O_POST(tty)) {
+                if (c=='\r' && O_CRNL(tty))
+                    c='\n';
+                else if (c=='\n' && O_NLRET(tty))
+                    c='\r';
+                if (c=='\n' && !cr_flag && O_NLCR(tty)) {
+                    cr_flag = 1;
+                    PUTCH(13,tty->write_q);
+                    continue;
+                }
+                if (O_LCUC(tty))
+                    c=toupper(c);
+            }
+            b++;
+            nr--;
+            cr_flag = 0;
+            PUTCH(c,tty->write_q);
+        }
+        tty->write(tty);
+    }
+
+    return (b - buf);
 }
 

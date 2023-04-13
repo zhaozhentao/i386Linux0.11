@@ -4,7 +4,8 @@ extern void con_init(void);
 void main(void) {
     con_init();
 
-    printk("hi");
+    printk("hi\n");
+    printk("hello\n");
 
     for (;;);
 }
