@@ -1,6 +1,8 @@
+extern void con_init(void);
 extern int printk(const char *fmt, ...);
 
 void main(void) {
-    printk("hello\n");
+    con_init();
+    printk("hello\nkernel");
 }
 
