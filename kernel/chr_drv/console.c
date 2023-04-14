@@ -9,28 +9,32 @@
 #define ORIG_VIDEO_LINES    (25)                                                 // 显示行数
 #define ORIG_VIDEO_EGA_BX	(*(unsigned short *)0x9000a)
 
-#define VIDEO_TYPE_MDA		0x10	/* Monochrome Text Display	*/
-#define VIDEO_TYPE_CGA		0x11	/* CGA Display 			*/
-#define VIDEO_TYPE_EGAM		0x20	/* EGA/VGA in Monochrome Mode	*/
-#define VIDEO_TYPE_EGAC		0x21	/* EGA/VGA in Color Mode	*/
+#define VIDEO_TYPE_MDA      0x10                                                 // 单色文本
+#define VIDEO_TYPE_CGA      0x11                                                 // CGA 显示器
+#define VIDEO_TYPE_EGAM     0x20                                                 // VGA EGA 单色
+#define VIDEO_TYPE_EGAC     0x21                                                 // VGA EGA 彩色
 
-static unsigned char	video_type;		/* Type of display being used	*/
+static unsigned char	video_type;                                              // 使用的显示类型
+
 static unsigned long    video_num_columns;                                       // 屏幕文本列数
 static unsigned long    video_size_row;                                          // 屏幕每行字节数
 static unsigned long    video_num_lines;                                         // 屏幕文本行数
 static unsigned long    video_mem_start;                                         // 显示内存起始地址
-static unsigned long	video_mem_end;                                           /* End of video RAM (sort of) */
-static unsigned short	video_port_reg;                                          /* Video register select port */
-static unsigned short	video_port_val;                                          /* Video register value port  */
-static unsigned short	video_erase_char;	/* Char+Attrib to erase with	*/
 
-static unsigned long    origin;
-static unsigned long	scr_end;	/* Used for EGA/VGA fast scroll	*/
-static unsigned long	pos;
-static unsigned long    x,y;
-static unsigned long	top,bottom;
-static unsigned long	state=0;
-static unsigned char	attr=0x07;
+static unsigned long	video_mem_end;                                           // 显示内存结束地址
+static unsigned short	video_port_reg;                                          // 显示控制索引寄存器端口
+static unsigned short	video_port_val;                                          // 显示控制数据寄存器端口
+static unsigned short	video_erase_char;                                        // 擦除字符和属性
+
+// 下面这些用于卷屏操作
+static unsigned long    origin;                                                  // 滚屏起始地址
+static unsigned long    scr_end;                                                 // 滚屏末端地址
+static unsigned long    pos;                                                     // 当前光标对应的显示内存位置
+static unsigned long    x,y;                                                     // 当前光标位置
+static unsigned long    top,bottom;                                              // 
+static unsigned long    state=0;
+static unsigned char    attr=0x07;
+
 
 static inline void gotoxy(unsigned int new_x, unsigned int new_y) {
     if (new_x > video_num_columns || new_y > video_num_lines)
@@ -114,7 +118,6 @@ static void scrup(void)
     }
 }
 
-
 static inline void lf(void) {
     if (y+1 < bottom) {
         y++;
@@ -168,6 +171,7 @@ void con_write(struct tty_struct * tty) {
                 break;
         }
     }
+
     set_cursor();
 }
 
@@ -208,4 +212,3 @@ void con_init(void) {
 
     gotoxy(ORIG_X,ORIG_Y);
 }
-
