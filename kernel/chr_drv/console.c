@@ -15,10 +15,12 @@
 #define VIDEO_TYPE_EGAC     0x21                                                 // VGA EGA 彩色
 
 static unsigned char	video_type;                                              // 使用的显示类型
+
 static unsigned long    video_num_columns;                                       // 屏幕文本列数
 static unsigned long    video_size_row;                                          // 屏幕每行字节数
 static unsigned long    video_num_lines;                                         // 屏幕文本行数
 static unsigned long    video_mem_start;                                         // 显示内存起始地址
+
 static unsigned long	video_mem_end;                                           // 显示内存结束地址
 static unsigned short	video_port_reg;                                          // 显示控制索引寄存器端口
 static unsigned short	video_port_val;                                          // 显示控制数据寄存器端口
@@ -32,6 +34,7 @@ static unsigned long    x,y;                                                    
 static unsigned long    top,bottom;                                              // 
 static unsigned long    state=0;
 static unsigned char    attr=0x07;
+
 
 static inline void gotoxy(unsigned int new_x, unsigned int new_y) {
     if (new_x > video_num_columns || new_y > video_num_lines)
@@ -115,7 +118,6 @@ static void scrup(void)
     }
 }
 
-
 static inline void lf(void) {
     if (y+1 < bottom) {
         y++;
@@ -169,6 +171,7 @@ void con_write(struct tty_struct * tty) {
                 break;
         }
     }
+
     set_cursor();
 }
 

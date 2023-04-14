@@ -35,6 +35,7 @@ struct tty_struct {
 #define GETCH(queue,c) \
 (void)({c=(queue).buf[(queue).tail];INC((queue).tail);})
 // 向缓冲区 queue 中存放一个字符，并使 head 后移 1 (字节)
+
 #define PUTCH(c,queue) \
 (void)({(queue).buf[(queue).head]=(c);INC((queue).head);})
 

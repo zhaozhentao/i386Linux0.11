@@ -17,6 +17,8 @@ lib.a: $(OBJS)
 
 string.o : string.c
 
+ctype.o : ctype.c ../include/ctype.h 
+
 clean:
 	rm -rf *.o *.a
 

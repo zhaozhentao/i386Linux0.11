@@ -6,4 +6,3 @@ __asm__ ("outb %%al,%%dx\n" \
     "\tjmp 1f\n" \
     "1:\tjmp 1f\n" \
     "1:"::"a" (value),"d" (port))
-
