@@ -13,7 +13,7 @@ CFLAGS	+= -I../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = sched.o printk.o vsprintf.o
+OBJS  = sched.o traps.o asm.o printk.o vsprintf.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
@@ -24,6 +24,8 @@ sched.o: sched.c
 printk.o: printk.c ../include/stdarg.h
 
 vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h
+
+traps.o: traps.c
 
 clean:
 	rm -f *.o

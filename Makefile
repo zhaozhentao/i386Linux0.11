@@ -1,10 +1,18 @@
 include Makefile.header
 
 LDFLAGS	+= -Ttext 0 -e startup_32
+CFLAGS	+= -Iinclude
 
 ARCHIVES=kernel/kernel.o
 DRIVERS=kernel/chr_drv/chr_drv.a
 LIBS	=lib/lib.a
+
+.c.s:
+	$(CC) $(CFLAGS) -S -o $*.s $<
+.s.o:
+	$(AS)  -o $*.o $<
+.c.o:
+	$(CC) $(CFLAGS) -c -o $*.o $<
 
 all: Image
 
