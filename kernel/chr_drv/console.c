@@ -1,3 +1,4 @@
+#include <linux/sched.h>
 #include <linux/tty.h>
 #include <asm/system.h>
 #include <asm/io.h>
@@ -13,6 +14,8 @@
 #define VIDEO_TYPE_CGA      0x11                                                 // CGA 显示器
 #define VIDEO_TYPE_EGAM     0x20                                                 // VGA EGA 单色
 #define VIDEO_TYPE_EGAC     0x21                                                 // VGA EGA 彩色
+
+extern void keyboard_interrupt(void);
 
 static unsigned char	video_type;                                              // 使用的显示类型
 
@@ -176,6 +179,8 @@ void con_write(struct tty_struct * tty) {
 }
 
 void con_init(void) {
+    register unsigned char a;
+
     video_num_columns = ORIG_VIDEO_COLS;                 // 将 setup.s 中保存在内存的一些硬件参数取出
     video_size_row = video_num_columns * 2;
     video_num_lines = ORIG_VIDEO_LINES;
@@ -211,4 +216,9 @@ void con_init(void) {
     bottom = video_num_lines;
 
     gotoxy(ORIG_X,ORIG_Y);
+    set_trap_gate(0x21, &keyboard_interrupt); // 注册键盘中断
+    outb_p(inb_p(0x21)&0xfd,0x21);            // 取消对键盘中断的屏蔽
+    a = inb_p(0x61);                          // 读取键盘端口
+    outb_p(a|0x80,0x61);                      // 设置禁用键盘
+    outb(a,0x61);                             // 允许键盘工作（复位）
 }

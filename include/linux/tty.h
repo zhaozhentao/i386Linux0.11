@@ -27,6 +27,8 @@ struct tty_struct {
 #define INC(a) ((a) = ((a)+1) & (TTY_BUF_SIZE-1))
 // 缓冲区空闲长度
 #define LEFT(a) (((a).tail-(a).head-1)&(TTY_BUF_SIZE-1))
+// 判断缓冲区是否空
+#define EMPTY(a) ((a).head == (a).tail)
 // 判断缓冲区是否已经满，即空闲长度为 0
 #define FULL(a) (!LEFT(a))
 // 缓冲区已存放的字符长度

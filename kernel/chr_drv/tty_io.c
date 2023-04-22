@@ -44,6 +44,19 @@ struct tty_struct tty_table[] = {
     }
 };
 
+struct tty_queue * table_list[]={
+	&tty_table[0].read_q, &tty_table[0].write_q
+};
+
+void do_tty_interrupt(int tty) {
+    char c;
+
+    if (!EMPTY(tty_table[0].read_q)) {
+        GETCH(tty_table[0].read_q, c);
+        printk("%c", c);
+    }
+}
+
 int tty_write(unsigned channel, char * buf, int nr) {
     static int cr_flag = 0;
     struct tty_struct *tty;
