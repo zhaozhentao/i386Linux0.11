@@ -10,7 +10,12 @@ static long memory_end = 0;                      // 内存大小
 static long buffer_memory_end = 0;               // 内核可用内存结束地址边界
 static long main_memory_start = 0;               // 应用程序起始内存边界
 
+struct buffer_head * getblk(int dev,int block);
+void brelse(struct buffer_head * buf);
+
 void main(void) {
+    struct buffer_head *bh;
+
     memory_end = (1<<20) + (EXT_MEM_K<<10);      // 内存大小 = 1M + 扩展内存
     memory_end &= 0xfffff000;                    // 忽略不到 4K 的内存
     if (memory_end > 16*1024*1024)
@@ -29,6 +34,9 @@ void main(void) {
     sched_init();
     buffer_init(buffer_memory_end);
     sti();
+
+    bh = getblk(0x300 + 0, 0);
+    brelse(bh);
 
     for (;;);
 }
