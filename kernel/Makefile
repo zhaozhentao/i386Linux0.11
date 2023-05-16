@@ -31,5 +31,5 @@ traps.o: traps.c
 
 clean:
 	rm -f *.o
-	for i in chr_drv; do make clean -C $$i; done
+	for i in blk_drv chr_drv; do make clean -C $$i; done
 

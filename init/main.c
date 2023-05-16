@@ -3,18 +3,19 @@
 
 // 下面这些数据是 setup.s 中设置的
 #define EXT_MEM_K (*(unsigned short *)0x90002)   // 1M 以后的扩展内存大小
+#define DRIVE_INFO (*(struct drive_info *)0x90080)
 
+struct drive_info { char dummy[32]; } drive_info;
+
+extern void hd_init(void);
 extern void con_init(void);
 
 static long memory_end = 0;                      // 内存大小
 static long buffer_memory_end = 0;               // 内核可用内存结束地址边界
 static long main_memory_start = 0;               // 应用程序起始内存边界
 
-struct buffer_head * getblk(int dev,int block);
-void brelse(struct buffer_head * buf);
-
 void main(void) {
-    struct buffer_head *bh;
+    drive_info = DRIVE_INFO;
 
     memory_end = (1<<20) + (EXT_MEM_K<<10);      // 内存大小 = 1M + 扩展内存
     memory_end &= 0xfffff000;                    // 忽略不到 4K 的内存
@@ -33,10 +34,9 @@ void main(void) {
     trap_init();
     sched_init();
     buffer_init(buffer_memory_end);
+    hd_init();
     sti();
 
-    bh = getblk(0x300 + 0, 0);
-    brelse(bh);
-
+    sys_setup((void *) &drive_info);
     for (;;);
 }

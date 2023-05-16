@@ -1,4 +1,4 @@
-.global timer_interrupt
+.global timer_interrupt, hd_interrupt
 
 .align 2
 timer_interrupt:
@@ -13,6 +13,35 @@ timer_interrupt:
   outb %al, $0x20
   call do_timer                   # 调用 c 实现的中断处理函数
   jmp ret_from_sys_call
+
+hd_interrupt:
+  pushl %eax
+  pushl %ecx
+  pushl %edx
+  push %ds
+  push %es
+  push %fs
+  movl $0x10,%eax
+  mov %ax,%ds
+  mov %ax,%es
+  movb $0x20,%al
+  outb %al,$0xA0		# EOI to interrupt controller #1
+1:
+  xorl %edx,%edx
+  xchgl do_hd,%edx
+  testl %edx,%edx
+  jne 1f
+  movl $unexpected_hd_interrupt,%edx
+1:
+  outb %al,$0x20
+  call *%edx		# "interesting" way of handling intr.
+  pop %fs
+  pop %es
+  pop %ds
+  popl %edx
+  popl %ecx
+  popl %eax
+  iret
 
 ret_from_sys_call:
 3:

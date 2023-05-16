@@ -1,6 +1,7 @@
 #include <stdarg.h>
 
 #include <linux/sched.h>
+#include <asm/system.h>
 
 extern int end;  // 这个变量是由编译器添加的，是 bss 段结束后的第一个地址，表示内核程序的结束边界
 
@@ -8,6 +9,10 @@ struct buffer_head * start_buffer = (struct buffer_head *) &end; // 取内核程
 struct buffer_head * hash_table[NR_HASH];                        // 内核使用 hash_table 管理内存，307 项
 static struct buffer_head * free_list;                           // 空闲的内存链表
 int NR_BUFFERS = 0;                                              // 用于统计缓冲块数量
+
+static inline void wait_on_buffer(struct buffer_head * bh) {
+    while (bh->b_lock);
+}
 
 #define _hashfn(dev,block) (((unsigned)(dev^block))%NR_HASH)
 #define hash(dev,block) hash_table[_hashfn(dev,block)]
@@ -123,6 +128,21 @@ void brelse(struct buffer_head * buf) {
 
 	if (!(buf->b_count--))
 		panic("Trying to free free buffer");
+}
+
+struct buffer_head * bread(int dev,int block) {
+    struct buffer_head * bh;
+
+    if (!(bh=getblk(dev,block)))
+        panic("bread: getblk returned NULL\n");
+    if (bh->b_uptodate)
+        return bh;
+    do_hd_read_write(READ,bh);
+    wait_on_buffer(bh);
+    if (bh->b_uptodate)
+        return bh;
+    brelse(bh);
+    return NULL;
 }
 
 void buffer_init(long buffer_end) {
