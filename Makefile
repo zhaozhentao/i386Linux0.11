@@ -1,10 +1,12 @@
+HDA_IMG = image
+
 include Makefile.header
 
 LDFLAGS	+= -Ttext 0 -e startup_32
 CFLAGS	+= -Iinclude
 
 ARCHIVES=kernel/kernel.o
-DRIVERS=kernel/chr_drv/chr_drv.a
+DRIVERS=kernel/blk_drv/blk_drv.a kernel/chr_drv/chr_drv.a
 LIBS	=lib/lib.a
 
 .c.s:
@@ -43,6 +45,9 @@ tools/system: boot/head.o init/main.o $(ARCHIVES) $(DRIVERS) $(LIBS)
 	$(LIBS) \
 	-o tools/system
 
+kernel/blk_drv/blk_drv.a:
+	make -C kernel/blk_drv
+
 kernel/chr_drv/chr_drv.a:
 	make -C kernel/chr_drv
 
@@ -50,10 +55,10 @@ kernel/kernel.o: kernel/*.c
 	make -C kernel
 
 start: Image
-	qemu-system-i386 -m 16M -boot a -fda Image -curses
+	qemu-system-i386 -m 16M -boot a -fda Image -hda $(HDA_IMG) -curses
 
 debug: Image
-	qemu-system-i386 -s -S -m 16M -boot a -fda Image -curses
+	qemu-system-i386 -s -S -m 16M -boot a -fda Image -hda $(HDA_IMG) -curses
 
 stop:
 	@kill -9 $$(ps -ef | grep qemu-system-i386 | awk '{print $$2}')

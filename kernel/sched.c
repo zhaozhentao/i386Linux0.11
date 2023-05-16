@@ -17,7 +17,7 @@ struct {
 } stack_start = { & user_stack [PAGE_SIZE>>2] , 0x10 };
 
 void do_timer(long cpl) {
-    printk("do_timer\n");
+
 }
 
 void sched_init(void) {
