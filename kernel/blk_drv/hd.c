@@ -36,6 +36,9 @@ static struct hd_struct {
 #define port_read(port,buf,nr) \
 __asm__("cld;rep;insw"::"d" (port),"D" (buf),"c" (nr))
 
+#define port_write(port,buf,nr) \
+__asm__("cld;rep;outsw"::"d" (port),"S" (buf),"c" (nr))
+
 extern void hd_interrupt(void);
 
 void sys_setup(void * BIOS) {
@@ -92,7 +95,7 @@ void sys_setup(void * BIOS) {
     }
 
     // 读取 0 号磁盘的 0 号 block
-    hd_read(0 * 5, 0);
+    do_hd_request(0 * 5, 0, WRITE);
 }
 
 // 判断并循环等待硬盘控制器就绪
@@ -142,7 +145,12 @@ static void read_intr(void) {
     return;
 }
 
-void hd_read(int dev, int b_block) {
+static void write_intr(void) {
+    printk("write_intr called\n");
+}
+
+void do_hd_request(int dev, int b_block, int cmd) {
+    int i, r = 0;
     unsigned int block;           // 扇区
     unsigned int sec, head, cyl;  // 磁道扇区号，磁头号，柱面
     unsigned int nsect;           // 需要读取的扇区数
@@ -161,7 +169,22 @@ void hd_read(int dev, int b_block) {
     sec++;                       // 对计算出来的磁道扇区号进行调整
     nsect = 2;                   // 一个块等于两个扇区，所以要读取两个扇区
 
-    hd_out(dev, nsect, sec, head, cyl, WIN_READ, &read_intr);
+    if (cmd == WRITE) {
+        // 向硬盘控制器发出写命令
+        hd_out(dev, nsect, sec, head, cyl, WIN_WRITE, &write_intr);
+
+        for(i=0 ; i<3000 && !(r=inb_p(HD_STATUS)&DRQ_STAT) ; i++)
+            /* 什么都不做，只是为了延时 */;
+
+        if (!r) {
+            printk("send write cmd failed\n");
+        }
+
+        port_write(HD_DATA, "write test data\n", 256);
+    } else if (cmd == READ) {
+        // 向硬盘控制器发出读命令
+        hd_out(dev, nsect, sec, head, cyl, WIN_READ, &read_intr);
+    }
 }
 
 void hd_init(void) {
