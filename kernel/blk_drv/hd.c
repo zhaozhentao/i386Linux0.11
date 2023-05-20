@@ -4,6 +4,8 @@
 #include <asm/io.h>
 #include <asm/system.h>
 
+#define MAJOR_NR 3
+
 #include "blk.h"
 
 #define CMOS_READ(addr) ({ \
@@ -188,6 +190,7 @@ void do_hd_request(int dev, int b_block, int cmd) {
 }
 
 void hd_init(void) {
+    blk_dev[MAJOR_NR].request_fn = DEVICE_REQUEST; // 注册块设备
     set_intr_gate(0x2E, &hd_interrupt);          // 设置中断向量 int 0x2e
     outb_p(inb_p(0x21)&0xfb, 0x21);              // 复位 8259A int2 屏蔽位，允许从片发中断信号
     outb(inb_p(0xA1)&0xbf, 0xA1);                // 复位硬盘的中断请求屏蔽位，允许硬盘控制器发送中断请求信号

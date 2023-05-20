@@ -4,6 +4,7 @@
 
 struct drive_info { char dummy[32]; } drive_info;
 
+extern void blk_dev_init(void);
 extern void hd_init(void);
 extern void con_init(void);
 
@@ -12,6 +13,7 @@ void main(void) {
 
     con_init();
     trap_init();
+    blk_dev_init();                                 // 初始化块设备结构
     sched_init();
     hd_init();
     sti();
