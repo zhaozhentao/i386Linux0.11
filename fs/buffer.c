@@ -7,6 +7,10 @@ struct buffer_head * hash_table[NR_HASH];                        // 内核使用
 static struct buffer_head * free_list;                           // 空闲的内存链表
 int NR_BUFFERS = 0;                                              // 用于统计缓冲块数量
 
+static inline void wait_on_buffer(struct buffer_head * bh) {
+	while (bh->b_lock);
+}
+
 /*
  * 关键字除留余数法，hash 函数包含 dev 和 block 两个关键字，对关键字 MOD 保证
  * 计算得出的结果在数组范围內
@@ -116,6 +120,22 @@ struct buffer_head * getblk(int dev,int block) {
     bh->b_blocknr=block;
     insert_into_queues(bh);
     return bh;
+}
+
+struct buffer_head* bread(int dev, int block) {
+    struct buffer_head * bh;
+
+    if (!(bh = getblk(dev, block))) {
+        panic("bread: getblk returned NULL\n");
+    }
+    if (bh->b_uptodate)
+        return bh;
+    ll_rw_block(READ, bh);
+    wait_on_buffer(bh);
+    if (bh->b_uptodate)
+        return bh;
+    brelse(bh);
+    return NULL;
 }
 
 void buffer_init(long buffer_end) {

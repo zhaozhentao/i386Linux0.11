@@ -1,5 +1,6 @@
 #define sti() __asm__ ("sti"::)                         // 开中断
 #define cli() __asm__ ("cli"::)                         // 关中断
+#define nop() __asm__ ("nop"::)
 
 #define _set_gate(gate_addr,type,dpl,addr) \
 __asm__ ("movw %%dx,%%ax\n\t" \

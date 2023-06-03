@@ -26,6 +26,9 @@ hd_interrupt:                     # 保护现场
   mov %ax, %es
   movb $0x20, %al                 # 清除中断标志，以便能重新触发中断
   outb %al, $0xA0
+  jmp 1f			# give port chance to breathe
+1:
+  jmp 1f
 1:
   xorl %edx, %edx                 # 清空 edx
   xchgl do_hd, %edx               # 将中断处理函数地址放到 edx
