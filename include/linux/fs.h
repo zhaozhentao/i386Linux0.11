@@ -3,8 +3,13 @@
 
 #define READ 0
 #define WRITE 1
+#define READA 2       /* read-ahead - don't pause */
+#define WRITEA 3      /* "write-ahead" - silly, but somewhat useful */
 
 void buffer_init(long buffer_end);
+
+#define MAJOR(a) (((unsigned)(a))>>8)
+#define MINOR(a) ((a)&0xff)
 
 #define NR_HASH 307                    // 管理缓冲区的 hash_table 有 307 项
 #define NR_BUFFERS nr_buffers          // 缓冲块数量，变量定义在 fs/buffer.c 中
@@ -26,6 +31,8 @@ struct buffer_head {
     struct buffer_head * b_prev_free;  // 前一个空闲的缓冲区头
     struct buffer_head * b_next_free;  // 下一个空闲的缓冲区头
 };
+
+extern struct buffer_head * bread(int dev,int block);
 
 #endif
 

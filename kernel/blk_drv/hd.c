@@ -13,6 +13,7 @@ outb_p(0x80|addr,0x70); \
 inb_p(0x71); \
 })
 
+#define MAX_ERRORS	7
 #define MAX_HD		2
 
 // harddisk info struct 硬盘参数结构
@@ -20,6 +21,11 @@ inb_p(0x71); \
 struct hd_i_struct {
     int head, sect, cyl, wpcom, lzone, ctl;
 };
+
+static void recal_intr(void);
+
+static int recalibrate = 0;              // 重新校正标志，程序会调用 recal_intr 把磁头移动到 0 柱面
+static int reset = 0;                    // 复位标志
 
 #ifdef HD_TYPE
 struct hd_i_struct hd_info[] = { HD_TYPE };
@@ -48,6 +54,7 @@ void sys_setup(void * BIOS) {
 
     int i, drive;
     unsigned char cmos_disks;
+    struct buffer_head * bh;
 
     // sys_setup 只会被调用一次
     if (!callable)
@@ -97,7 +104,8 @@ void sys_setup(void * BIOS) {
     }
 
     // 读取 0 号磁盘的 0 号 block
-    do_hd_request(0 * 5, 0, WRITE);
+    bh = bread(0x300 + 0*5, 0);
+    printk("read %s\n", bh->b_data);
 }
 
 // 判断并循环等待硬盘控制器就绪
@@ -108,6 +116,16 @@ static int controller_ready(void) {
 
     // 返回等待次数
     return (retries);
+}
+
+static int win_result(void) {
+    int i=inb_p(HD_STATUS);
+
+    if ((i & (BUSY_STAT | READY_STAT | WRERR_STAT | SEEK_STAT | ERR_STAT))
+        == (READY_STAT | SEEK_STAT))
+        return(0); /* ok */
+    if (i&1) i=inb(HD_ERROR);
+        return (1);
 }
 
 // 等待硬盘控制器就绪后，向硬盘发送控制字节和 7 字节的参数命令块，硬盘完成命令后触发中断，中断入口在 kernel/sys_call.s 中
@@ -134,33 +152,102 @@ static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
     outb(cmd,++port);                        // 硬盘控制命令
 }
 
+static int drive_busy(void) {
+    unsigned int i;
+
+    for (i = 0; i < 10000; i++)
+        if (READY_STAT == (inb_p(HD_STATUS) & (BUSY_STAT|READY_STAT)))
+            break;
+    i = inb(HD_STATUS);
+    i &= BUSY_STAT | READY_STAT | SEEK_STAT;
+    if (i == (READY_STAT | SEEK_STAT))
+        return(0);
+    printk("HD controller times out\n\r");
+    return(1);
+}
+
+static void reset_controller(void) {
+    int	i;
+
+    outb(4,HD_CMD);
+    for(i = 0; i < 100; i++) nop();
+        outb(hd_info[0].ctl & 0x0f ,HD_CMD);
+    if (drive_busy())
+        printk("HD-controller still busy\n\r");
+    if ((i = inb(HD_ERROR)) != 1)
+        printk("HD-controller reset failed: %02x\n\r",i);
+}
+
+static void reset_hd(int nr) {
+    reset_controller();
+    hd_out(nr,hd_info[nr].sect,hd_info[nr].sect,hd_info[nr].head-1,
+        hd_info[nr].cyl,WIN_SPECIFY,&recal_intr);
+}
+
 void unexpected_hd_interrupt(void) {
     printk("Unexpected HD interrupt\n\r");
 }
 
+static void bad_rw_intr(void) {
+    // 如果请求出错次数大于 7 结束请求
+    if (++CURRENT->errors >= MAX_ERRORS)
+        end_request(0);
+    // 如果请求出错次数大于限定值，触发复位
+    if (CURRENT->errors > MAX_ERRORS/2)
+        reset = 1;
+}
+
 static void read_intr(void) {
-    char buffer[512] = {};
-    port_read(HD_DATA, buffer,256);
+    /*
+     * 首先判断一下此次读操作有没有出错，若命令结束后控制器还出于忙状态，
+     * 或者命令执行错误，则硬盘处理操作失败，请求硬盘复位并执行其他请求项，
+     * 如果请求项累计出错超过 7 次，结束本次请求项，执行下一个请求项
+     */
+    if (win_result()) {
+        bad_rw_intr();
+        do_hd_request();
+        return;
+    }
 
-    printk("read: %s\n", buffer);
-
-    return;
+    port_read(HD_DATA,CURRENT->buffer,256);
+    CURRENT->errors = 0;
+    CURRENT->buffer += 512;
+    CURRENT->sector++;
+    // 一个请求包含两个扇区，每次中断中获取一个扇区的数据 512 字节。
+    if (--CURRENT->nr_sectors) {
+        do_hd = &read_intr;
+        return;
+    }
+    end_request(1);
+    do_hd_request();
 }
 
 static void write_intr(void) {
     printk("write_intr called\n");
 }
 
-void do_hd_request(int dev, int b_block, int cmd) {
+static void recal_intr(void) {
+    if (win_result())
+        bad_rw_intr();
+    do_hd_request();
+}
+
+void do_hd_request(void) {
     int i, r = 0;
-    unsigned int block;           // 扇区
+    unsigned int block, dev;      // 扇区，设备
     unsigned int sec, head, cyl;  // 磁道扇区号，磁头号，柱面
     unsigned int nsect;           // 需要读取的扇区数
 
-    block = b_block << 1;         // 将块号转换为扇区号，一个块等于两个扇区
+    // 参数检查
+    INIT_REQUEST;
+    dev = MINOR(CURRENT->dev);    // 取出设备号
+    block = CURRENT->sector;      // 取出要操作的扇区,一个块等于两个扇区
+    if (dev >= 5*NR_HD || block+2 > hd[dev].nr_sects) {
+        end_request(0);
+        goto repeat;
+    }
     block += hd[dev].start_sect;  // 加上起始扇区的偏移
-
-    dev /= 5;
+    dev /= 5;                     // 此时 dev 代表硬盘号 0 号还是 1 号硬盘
 
     // 通过前面保存的硬盘信息，把要读取的块号转换为磁头号，柱面，磁道中的扇区号
     __asm__("divl %4":"=a" (block),"=d" (sec):"0" (block),"1" (0),
@@ -169,9 +256,21 @@ void do_hd_request(int dev, int b_block, int cmd) {
         "r" (hd_info[dev].head));
 
     sec++;                       // 对计算出来的磁道扇区号进行调整
-    nsect = 2;                   // 一个块等于两个扇区，所以要读取两个扇区
+    nsect = CURRENT->nr_sectors; // 需要操作的扇区数量，一般每次操作 2 个扇区
+    if (reset) {
+        reset = 0;
+        recalibrate = 1;
+        reset_hd(CURRENT_DEV);
+        return;
+    }
+    if (recalibrate) {
+        recalibrate = 0;
+        hd_out(dev,hd_info[CURRENT_DEV].sect,0,0,0,
+            WIN_RESTORE,&recal_intr);
+        return;
+    }
 
-    if (cmd == WRITE) {
+    if (CURRENT->cmd == WRITE) {
         // 向硬盘控制器发出写命令
         hd_out(dev, nsect, sec, head, cyl, WIN_WRITE, &write_intr);
 
@@ -183,7 +282,7 @@ void do_hd_request(int dev, int b_block, int cmd) {
         }
 
         port_write(HD_DATA, "write test data\n", 256);
-    } else if (cmd == READ) {
+    } else if (CURRENT->cmd == READ) {
         // 向硬盘控制器发出读命令
         hd_out(dev, nsect, sec, head, cyl, WIN_READ, &read_intr);
     }
