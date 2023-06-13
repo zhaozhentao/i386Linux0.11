@@ -22,6 +22,18 @@
 #define WIN_WRITE  0x30
 #define WIN_SPECIFY		0x91
 
-#endif
+struct partition {
+  unsigned char boot_ind;    /* 引导标志，4 个分区中只有一个是引导分区 0 表示非引导分区，0x80 表示引导分区 */
+  unsigned char head;        /* 分区起始磁头号 */
+  unsigned char sector;      /* 分区起始扇区号(0 ~ 5位)，起始柱面号高2位(6 ~ 7位) */
+  unsigned char cyl;         /* 分区起始柱面号低8位(8位) */
+  unsigned char sys_ind;     /* 分区类型字节 */
+  unsigned char end_head;    /* 分区结束磁头号  */
+  unsigned char end_sector;  /* 结束扇区号(0~5位) 结束柱面号高2位(6~7位) */
+  unsigned char end_cyl;     /* 结束柱面号低8位 */
+  unsigned int start_sect;   /* 分区起始物理扇区号 */
+  unsigned int nr_sects;     /* 分区占用扇区数  */
+};
 
+#endif
 
