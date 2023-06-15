@@ -6,4 +6,4 @@ system.tmp
 *.map
 tools/system
 hdc-0.11.img
-
+.idea
