@@ -10,7 +10,7 @@ CFLAGS += -I../include
 .s.o:
 	$(AS) -o $*.o $<
 
-OBJS = buffer.o
+OBJS = file_table.o buffer.o super.o
 
 fs.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o fs.o $(OBJS)
@@ -19,4 +19,8 @@ clean:
 	rm -f *.o
 
 buffer.o: buffer.c
+
+file_table.o: file_table.c
+
+super.o: super.c
 

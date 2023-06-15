@@ -92,6 +92,18 @@ static void make_request(int major,int rw, struct buffer_head * bh) {
         return;
     }
 
+    // 从请求队列中找出空闲项,读操作优先，请求队列后三分之一的空间用于读请求项
+repeat:
+    if (rw == READ)
+        req = request+NR_REQUEST;
+    else
+        req = request+((NR_REQUEST*2)/3);
+    /* find an empty request */
+    while (--req >= request)
+        if (req->dev<0)
+            break;
+    // todo if not found empty request
+
     req->dev = bh->b_dev;
     req->cmd = rw;
     req->errors=0;

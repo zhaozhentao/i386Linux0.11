@@ -95,8 +95,30 @@ after_page_tables:
 L6:
   jmp L6                                # main should never return here, but
 
+int_msg:
+  .asciz "Unknown interrupt\n\r"
 .align 2
 ignore_int:                             # 这是一个哑巴中断处理程序，完成了保护现场和调用 printk 打印一下信息
+  pushl %eax
+  pushl %ecx
+  pushl %edx
+  push  %ds
+  push  %es
+  push  %fs
+  movl  $0x10,%eax
+  mov   %ax, %ds
+  mov   %ax, %es
+  mov   %ax, %fs
+  pushl $int_msg
+  call printk
+  popl %eax
+  pop %fs
+  pop %es
+  pop %ds
+  popl %edx
+  popl %ecx
+  popl %eax
+  iret
 
 .align 2
 setup_paging:

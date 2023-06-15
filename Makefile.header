@@ -4,7 +4,7 @@ LDFLAGS = -m elf_i386
 OBJCOPY = objcopy
 OBJDUMP = objdump
 STRIP = strip
-CFLAGS  = -g -m32 -gdwarf-2 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
+CFLAGS  = -g -m32 -no-pie -fno-pic -gdwarf-2 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
 AR	= ar
 CPP	= cpp -nostdinc
 
