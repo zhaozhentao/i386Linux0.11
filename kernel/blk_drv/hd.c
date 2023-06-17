@@ -54,6 +54,7 @@ void sys_setup(void * BIOS) {
 
     int i, drive;
     unsigned char cmos_disks;
+    struct partition *p;
     struct buffer_head * bh;
 
     // sys_setup 只会被调用一次
@@ -103,9 +104,34 @@ void sys_setup(void * BIOS) {
         hd[i*5].nr_sects = 0;
     }
 
-    // 读取 0 号磁盘的 0 号 block
-    bh = bread(0x300 + 0*5, 0);
-    printk("read %s\n", bh->b_data);
+    // 读取每个磁盘中的 0 号块,检查主引导记录魔数
+    for (drive=0 ; drive<NR_HD ; drive++) {
+        if (!(bh = bread(0x300 + drive*5, 0))) {
+            printk("Unable to read partition table of drive %d\n\r", drive);
+            panic("");
+        }
+
+        // 检查主引导记录魔数 0x55 和 0xaa
+        if (bh->b_data[510] != 0x55 || (unsigned char)
+            bh->b_data[511] != 0xAA) {
+            printk("Bad partition table on drive %d\n\r",drive);
+            panic("");
+        }
+        // 分区信息位于硬盘第 1 扇区的 0x1be 处
+        p = 0x1BE + (void *)bh->b_data;
+        // 读取分区信息
+        for (i=1;i<5;i++,p++) {
+            hd[i+5*drive].start_sect = p->start_sect;
+            hd[i+5*drive].nr_sects = p->nr_sects;
+        }
+        brelse(bh);
+    }
+
+    // 如果能够运行到这里说明MBR 检查通过
+    if (NR_HD)
+        printk("Partition table%s ok.\n\r",(NR_HD>1)?"s":"");
+
+    mount_root();
 }
 
 // 判断并循环等待硬盘控制器就绪

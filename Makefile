@@ -1,4 +1,4 @@
-HDA_IMG = image
+HDA_IMG = hdc-0.11.img
 
 include Makefile.header
 
