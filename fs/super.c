@@ -112,6 +112,8 @@ static struct super_block * read_super(int dev) {
     return s;
 }
 
+struct m_inode * root;
+
 void mount_root(void) {
     int i,free;
     struct super_block * p;
@@ -135,6 +137,10 @@ void mount_root(void) {
     // 从磁盘读取超级块
     if (!(p=read_super(ROOT_DEV)))
         panic("Unable to mount root");
+    if (!(mi=iget(ROOT_DEV,ROOT_INO)))
+        panic("Unable to read root i-node");
+    // todo: 目前还没有实现进程相关，先用 root 保存根节点
+    root = mi;
     // 下面开始读取位图中的每一位，看看有多少空闲块
     free=0;
     i=p->s_nzones;
