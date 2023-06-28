@@ -13,12 +13,14 @@ void buffer_init(long buffer_end);
 #define MAJOR(a) (((unsigned)(a))>>8)
 #define MINOR(a) ((a)&0xff)
 
+#define NAME_LEN 14                    // 文件名长度
 #define ROOT_INO 1                     // 根 i 节点
 
 #define I_MAP_SLOTS 8                  // i 节点位图槽数
 #define Z_MAP_SLOTS 8                  // 逻辑块位图槽数
 #define SUPER_MAGIC 0x137F             // 文件系统魔数
 
+#define NR_INODE 32                    // 系统同时最多可以打开 i 节点个数
 #define NR_FILE 64                     // 系统最多打开文件个数
 #define NR_SUPER 8                     // 系统包含的超级块个数
 #define NR_HASH 307                    // 管理缓冲区的 hash_table 有 307 项
@@ -27,6 +29,8 @@ void buffer_init(long buffer_end);
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif
+
+#define INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct d_inode)))
 
 struct buffer_head {
     char * b_data;                     // 指向具体的缓冲区
@@ -121,8 +125,14 @@ struct d_super_block {
     unsigned short s_magic;            // 文件系统魔数
 };
 
+// 目录项
+struct dir_entry {
+    unsigned short inode;              // inode 号
+    char name[NAME_LEN];               // 文件名
+};
 
 extern struct file file_table[NR_FILE];
+extern struct super_block super_block[NR_SUPER];
 
 extern struct buffer_head * bread(int dev,int block);
 extern int ROOT_DEV;
