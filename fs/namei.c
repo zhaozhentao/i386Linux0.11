@@ -96,6 +96,14 @@ static struct m_inode * dir_namei(const char * pathname,
     if (!(dir = get_dir(pathname)))
         return NULL;
 
+    // 查找最后一个 / 后的名字字符串，并计算其长度
+    basename = pathname;
+    while (c=pathname[0], pathname++, c)
+        if (c=='/')
+            basename=pathname;
+    *namelen = pathname-basename-1;
+    *name = basename;
+
     return dir;
 }
 
@@ -106,13 +114,32 @@ int open_namei(const char * pathname, int flag, int mode,
     struct m_inode ** res_inode) {
     const char * basename;
     int inr,dev,namelen;
-    struct m_inode * dir;
+    struct m_inode * dir, *inode;
+    struct buffer_head * bh;
+    struct dir_entry * de;
 
     // 先取得文件所在目录，比如 /usr/root/whoami.c 要先取得 /usr/root 的 inode
     if (!(dir = dir_namei(pathname,&namelen,&basename)))
         return -ENOENT;
 
-    // 目前先暂时返回 0
+    // 先不考虑打开目录文件的情况
+    bh = find_entry(&dir, basename, namelen, &de);
+    // 如果 bh 不存在，可能是需要创建文件，先不处理
+    if (!bh) {
+        return -ENOENT;
+    }
+
+    // 文件 inode 号
+    inr = de->inode;
+    dev = dir->i_dev;
+    brelse(bh);
+    iput(dir);
+
+    if (!(inode=iget(dev,inr)))
+        return -EACCES;
+
+    // 返回文件 inode
+    *res_inode = inode;
     return 0;
 }
 

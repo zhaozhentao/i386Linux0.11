@@ -53,8 +53,24 @@ struct m_inode * get_empty_inode(void) {
     return inode;
 }
 
+// 释放一个节点，因为目前是读的操作，不需要写回设备
 void iput(struct m_inode * inode) {
-
+    if (!inode)
+        return;
+    wait_on_inode(inode);
+    if (!inode->i_count)
+        panic("iput: trying to free free inode");
+    // 设备号为 0  引用直接减 1 返回
+    if (!inode->i_dev) {
+        inode->i_count--;
+        return;
+    }
+    if (inode->i_count>1) {
+        inode->i_count--;
+        return;
+    }
+    inode->i_count--;
+    return;
 }
 
 // 获取指定设备的 nr 号 inode
