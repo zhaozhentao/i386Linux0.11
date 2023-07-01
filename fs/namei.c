@@ -78,7 +78,6 @@ static struct m_inode * get_dir(const char * pathname) {
         }
         // 找到目录项，从该目录项中获取 inode 号
         inr = de->inode;
-        printk("got %s inode %d\n", thisname, inr);
         idev = inode->i_dev;
         brelse(bh);
         iput(inode);
