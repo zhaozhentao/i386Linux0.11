@@ -47,7 +47,6 @@ void main(void) {
 
     sys_setup((void *) &drive_info);
 
-    open_namei("/usr/root/whoami.c", O_RDWR, 0, &inode);
-    printk("got inode num is %d\n", inode->i_num);
+    open_namei("/usr/root/hi.c", O_CREAT, 0, &inode);
     for (;;);
 }

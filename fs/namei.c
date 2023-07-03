@@ -1,5 +1,6 @@
 #include <linux/sched.h>
 
+#include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
 
@@ -35,6 +36,62 @@ static struct buffer_head * find_entry(struct m_inode ** dir,
 
         // 通过文件名对比目录项
         if (!strncmp(de->name, name, namelen)) {
+            *res_dir = de;
+            return bh;
+        }
+        de++;
+        i++;
+    }
+    brelse(bh);
+    return NULL;
+}
+
+static struct buffer_head * add_entry(struct m_inode * dir,
+    const char * name, int namelen, struct dir_entry ** res_dir) {
+    int block,i;
+    struct buffer_head * bh;
+    struct dir_entry * de;
+
+    *res_dir = NULL;
+#ifdef NO_TRUNCATE
+    if (namelen > NAME_LEN)
+        return NULL;
+#else
+    if (namelen > NAME_LEN)
+        namelen = NAME_LEN;
+#endif
+    if (!namelen)
+        return NULL;
+    if (!(block = dir->i_zone[0]))
+        return NULL;
+    if (!(bh = bread(dir->i_dev,block)))
+        return NULL;
+    i = 0;
+    de = (struct dir_entry *) bh->b_data;
+    while (1) {
+        if ((char *)de >= BLOCK_SIZE+bh->b_data) {
+            brelse(bh);
+            bh = NULL;
+            block = create_block(dir,i/DIR_ENTRIES_PER_BLOCK);
+            if (!block)
+                return NULL;
+            if (!(bh = bread(dir->i_dev,block))) {
+                i += DIR_ENTRIES_PER_BLOCK;
+                continue;
+            }
+            de = (struct dir_entry *) bh->b_data;
+        }
+        if (i*sizeof(struct dir_entry) >= dir->i_size) {
+            de->inode=0;
+            dir->i_size = (i+1)*sizeof(struct dir_entry);
+            dir->i_dirt = 1;
+            // dir->i_ctime = CURRENT_TIME;
+        }
+        if (!de->inode) {
+            //dir->i_mtime = CURRENT_TIME;
+            for (i=0; i < NAME_LEN ; i++)
+                de->name[i]=(i<namelen)?name[i]:0;
+            bh->b_dirt = 1;
             *res_dir = de;
             return bh;
         }
@@ -126,6 +183,28 @@ int open_namei(const char * pathname, int flag, int mode,
     bh = find_entry(&dir, basename, namelen, &de);
     // 如果 bh 不存在，可能是需要创建文件，先不处理
     if (!bh) {
+        if (!(flag & O_CREAT)) {
+            iput(dir);
+            return -ENOENT;
+        }
+
+        // todo 因为目前还没有引入用户概念，先跳过权限检测
+        inode = new_inode(dir->i_dev);
+        if (!inode) {
+            iput(dir);
+            return -ENOSPC;
+        }
+
+        // inode->i_uid = current->euid;
+        inode->i_mode = mode;
+        inode->i_dirt = 1;
+        bh = add_entry(dir,basename,namelen,&de);
+
+        de->inode = inode->i_num;
+        bh->b_dirt = 1;
+        brelse(bh);
+        iput(dir);
+        *res_inode = inode;
         return -ENOENT;
     }
 

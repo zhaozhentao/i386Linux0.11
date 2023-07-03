@@ -7,5 +7,10 @@
 
 #define HZ 100
 
+extern long volatile jiffies;
+extern long startup_time;
+
+#define CURRENT_TIME (startup_time+jiffies/HZ)
+
 #endif
 
