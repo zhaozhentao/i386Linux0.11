@@ -11,6 +11,20 @@ static inline void wait_on_buffer(struct buffer_head * bh) {
     while (bh->b_lock);
 }
 
+int sys_sync(void) {
+    int i;
+    struct buffer_head * bh;
+
+    sync_inodes();		/* write out inodes into buffers */
+    bh = start_buffer;
+    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
+        wait_on_buffer(bh);
+        if (bh->b_dirt)
+            ll_rw_block(WRITE,bh);
+    }
+    return 0;
+}
+
 int sync_dev(int dev) {
     int i;
     struct buffer_head * bh;
@@ -29,8 +43,10 @@ int sync_dev(int dev) {
         if (bh->b_dev != dev)
             continue;
         wait_on_buffer(bh);
-        if (bh->b_dev == dev && bh->b_dirt)
+        if (bh->b_dev == dev && bh->b_dirt) {
+            printk("ll_rw_block\n");
             ll_rw_block(WRITE,bh);
+        }
     }
     return 0;
 }

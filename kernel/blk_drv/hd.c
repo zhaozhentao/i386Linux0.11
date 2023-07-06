@@ -249,7 +249,20 @@ static void read_intr(void) {
 }
 
 static void write_intr(void) {
-    printk("write_intr called\n");
+    if (win_result()) {
+        bad_rw_intr();
+        do_hd_request();
+        return;
+    }
+    if (--CURRENT->nr_sectors) {
+        CURRENT->sector++;
+        CURRENT->buffer += 512;
+        do_hd = &write_intr;
+        port_write(HD_DATA,CURRENT->buffer,256);
+        return;
+    }
+    end_request(1);
+    do_hd_request();
 }
 
 static void recal_intr(void) {
@@ -307,7 +320,7 @@ void do_hd_request(void) {
             printk("send write cmd failed\n");
         }
 
-        port_write(HD_DATA, "write test data\n", 256);
+        port_write(HD_DATA,CURRENT->buffer,256);
     } else if (CURRENT->cmd == READ) {
         // 向硬盘控制器发出读命令
         hd_out(dev, nsect, sec, head, cyl, WIN_READ, &read_intr);

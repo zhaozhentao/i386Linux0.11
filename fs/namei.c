@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <const.h>
 #include <sys/stat.h>
 
 extern struct m_inode * root;
@@ -175,6 +176,7 @@ int open_namei(const char * pathname, int flag, int mode,
     struct buffer_head * bh;
     struct dir_entry * de;
 
+    mode |= I_REGULAR;
     // 先取得文件所在目录，比如 /usr/root/whoami.c 要先取得 /usr/root 的 inode
     if (!(dir = dir_namei(pathname,&namelen,&basename)))
         return -ENOENT;
@@ -205,7 +207,7 @@ int open_namei(const char * pathname, int flag, int mode,
         brelse(bh);
         iput(dir);
         *res_inode = inode;
-        return -ENOENT;
+        return 0;
     }
 
     // 文件 inode 号

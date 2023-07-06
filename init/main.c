@@ -48,5 +48,7 @@ void main(void) {
     sys_setup((void *) &drive_info);
 
     open_namei("/usr/root/hi.c", O_CREAT, 0, &inode);
+    iput(inode);
+    sys_sync();
     for (;;);
 }
