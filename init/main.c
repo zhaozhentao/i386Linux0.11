@@ -1,7 +1,12 @@
 #include <asm/system.h>
 
+#include <fcntl.h>
+
+#include <linux/fs.h>
+
 #define EXT_MEM_K (*(unsigned short *)0x90002)        // 1M 以后的扩展内存大小，也是在 setup.s 中设置的
 #define DRIVE_INFO (*(struct drive_info *) 0x90080);  // 这个地址下的信息由 setup.s 设置,保存了 hd0 相关信息
+#define ORIG_ROOT_DEV (*(unsigned short *)0x901FC)    // 根文件系统所在设备号
 
 struct drive_info { char dummy[32]; } drive_info;
 
@@ -14,6 +19,9 @@ static long buffer_memory_end = 0;               // 内核可用内存结束地�
 static long main_memory_start = 0;               // 应用程序起始内存边界
 
 void main(void) {
+    struct m_inode * inode;
+
+    ROOT_DEV = ORIG_ROOT_DEV;
     drive_info = DRIVE_INFO;                         // 注意这里是值的复制，因为这个地址将来会被回收不再保存硬盘信息
 
     memory_end = (1<<20) + (EXT_MEM_K<<10);      // 内存大小 = 1M + 扩展内存
@@ -38,5 +46,8 @@ void main(void) {
     sti();
 
     sys_setup((void *) &drive_info);
+
+    open_namei("/usr/root/whoami.c", O_RDWR, 0, &inode);
+    printk("got inode num is %d\n", inode->i_num);
     for (;;);
 }

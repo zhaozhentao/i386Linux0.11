@@ -10,7 +10,7 @@ CFLAGS += -I../include
 .s.o:
 	$(AS) -o $*.o $<
 
-OBJS = buffer.o
+OBJS = inode.o file_table.o buffer.o super.o namei.o
 
 fs.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o fs.o $(OBJS)
@@ -19,4 +19,12 @@ clean:
 	rm -f *.o
 
 buffer.o: buffer.c
+
+file_table.o: file_table.c
+
+inode.o: inode.c
+
+super.o: super.c
+
+namei.o: namei.c
 
