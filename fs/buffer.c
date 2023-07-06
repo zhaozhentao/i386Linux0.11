@@ -25,32 +25,6 @@ int sys_sync(void) {
     return 0;
 }
 
-int sync_dev(int dev) {
-    int i;
-    struct buffer_head * bh;
-
-    bh = start_buffer;
-    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
-        if (bh->b_dev != dev)
-            continue;
-        wait_on_buffer(bh);
-        if (bh->b_dev == dev && bh->b_dirt)
-            ll_rw_block(WRITE,bh);
-    }
-    sync_inodes();
-    bh = start_buffer;
-    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
-        if (bh->b_dev != dev)
-            continue;
-        wait_on_buffer(bh);
-        if (bh->b_dev == dev && bh->b_dirt) {
-            printk("ll_rw_block\n");
-            ll_rw_block(WRITE,bh);
-        }
-    }
-    return 0;
-}
-
 /*
  * 关键字除留余数法，hash 函数包含 dev 和 block 两个关键字，对关键字 MOD 保证
  * 计算得出的结果在数组范围內

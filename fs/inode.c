@@ -151,10 +151,6 @@ void iput(struct m_inode * inode) {
         inode->i_count--;
         return;
     }
-    if (S_ISBLK(inode->i_mode)) {
-        sync_dev(inode->i_zone[0]);
-        wait_on_inode(inode);
-    }
 repeat:
     if (inode->i_count>1) {
         inode->i_count--;
