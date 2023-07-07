@@ -1,5 +1,3 @@
-#include <sys/stat.h>
-
 #include <linux/sched.h>
 
 // 内存中的 i 节点表
