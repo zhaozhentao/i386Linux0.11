@@ -11,6 +11,21 @@ static inline void wait_on_buffer(struct buffer_head * bh) {
     while (bh->b_lock);
 }
 
+// 同步设备和内存缓冲区的数据，把内存中的数据写入到磁盘中
+int sys_sync(void) {
+    int i;
+    struct buffer_head * bh;
+
+    sync_inodes();
+    bh = start_buffer;
+    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
+        wait_on_buffer(bh);
+        if (bh->b_dirt)
+            ll_rw_block(WRITE,bh);
+    }
+    return 0;
+}
+
 /*
  * 关键字除留余数法，hash 函数包含 dev 和 block 两个关键字，对关键字 MOD 保证
  * 计算得出的结果在数组范围內

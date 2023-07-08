@@ -31,6 +31,8 @@ void buffer_init(long buffer_end);
 #endif
 
 #define INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct d_inode)))
+// 每个块能够存放的目录项数目
+#define DIR_ENTRIES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct dir_entry)))
 
 struct buffer_head {
     char * b_data;                     // 指向具体的缓冲区

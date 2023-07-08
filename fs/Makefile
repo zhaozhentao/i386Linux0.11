@@ -10,13 +10,16 @@ CFLAGS += -I../include
 .s.o:
 	$(AS) -o $*.o $<
 
-OBJS = inode.o file_table.o buffer.o super.o namei.o
+OBJS = inode.o file_table.o buffer.o super.o namei.o \
+	   bitmap.o
 
 fs.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o fs.o $(OBJS)
 
 clean:
 	rm -f *.o
+
+bitmap.o: bitmap.c
 
 buffer.o: buffer.c
 
