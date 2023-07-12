@@ -154,6 +154,10 @@ static int _bmap(struct m_inode * inode,int block,int create) {
     return i;
 }
 
+int bmap(struct m_inode * inode,int block) {
+    return _bmap(inode,block,0);
+}
+
 // 取文件数据块block 在设备上的逻辑块号, 如果对应的逻辑块不存在就创建
 // 操作成功返回逻辑块好，否则返回 0
 int create_block(struct m_inode * inode, int block) {
