@@ -19,9 +19,6 @@ static long buffer_memory_end = 0;               // 内核可用内存结束地�
 static long main_memory_start = 0;               // 应用程序起始内存边界
 
 void main(void) {
-    char buffer[11];
-    struct m_inode * inode;
-
     ROOT_DEV = ORIG_ROOT_DEV;
     drive_info = DRIVE_INFO;                         // 注意这里是值的复制，因为这个地址将来会被回收不再保存硬盘信息
 
@@ -48,12 +45,8 @@ void main(void) {
 
     sys_setup((void *) &drive_info);
 
-    open_namei("/usr/root/hi.c", O_CREAT, 0, &inode);
-    file_write(inode, "file_write", 11);
-    file_read(inode, buffer, 11);
-    iput(inode);
+    sys_unlink("/usr/root/hello.c");
     sys_sync();
 
-    printk("%s\n", buffer);
     for (;;);
 }

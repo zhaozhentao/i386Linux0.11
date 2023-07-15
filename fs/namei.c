@@ -248,3 +248,63 @@ int open_namei(const char * pathname, int flag, int mode,
     return 0;
 }
 
+// 删除文件
+int sys_unlink(const char * name) {
+    const char * basename;
+    int namelen;
+    struct m_inode * dir, * inode;
+    struct buffer_head * bh;
+    struct dir_entry * de;
+
+    // 检查参数有效性，返回文件所在目录
+    if (!(dir = dir_namei(name,&namelen,&basename)))
+        return -ENOENT;
+    // 如果文件名长度为 0 ,说明路径没有指定文件名，释放 dir 的 inode
+    if (!namelen) {
+        iput(dir);
+        return -ENOENT;
+    }
+
+    // todo permission check
+
+    // 查找目录项，返回目录项所在的缓冲区块 buffer_head
+    bh = find_entry(&dir,basename,namelen,&de);
+    if (!bh) {
+        iput(dir);
+        return -ENOENT;
+    }
+    // 根据目录项里面的 i 节点号获取文件的 inode
+    if (!(inode = iget(dir->i_dev, de->inode))) {
+        iput(dir);
+        brelse(bh);
+        return -ENOENT;
+    }
+
+    // todo permission check
+
+    // unlink 只能删除文件，不能删除目录，如果是目录返回
+    if (S_ISDIR(inode->i_mode)) {
+        iput(inode);
+        iput(dir);
+        brelse(bh);
+        return -EPERM;
+    }
+    if (!inode->i_nlinks) {
+        printk("Deleting nonexistent file (%04x:%d), %d\n",
+            inode->i_dev,inode->i_num,inode->i_nlinks);
+        inode->i_nlinks=1;
+    }
+    // 设置目录项 i 节点号为 0 释放该目录项
+    de->inode = 0;
+    // 释放目录项后，目录项所在的缓冲区需要被写入到磁盘
+    bh->b_dirt = 1;
+    brelse(bh);
+    // 当 i_nlinks 为 0 时，表示文件被删除了
+    inode->i_nlinks--;
+    inode->i_dirt = 1;
+    // inode->i_ctime = CURRENT_TIME;
+    iput(inode);
+    iput(dir);
+    return 0;
+}
+
