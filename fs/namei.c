@@ -248,6 +248,94 @@ int open_namei(const char * pathname, int flag, int mode,
     return 0;
 }
 
+// 创建目录文件，参数为目录路径如 /usr/root/mydir，其中 mode 参数定义在 include/sys/stat.h 中
+int sys_mkdir(const char * pathname, int mode) {
+    const char * basename;
+    int namelen;
+    struct m_inode * dir, * inode;
+    struct buffer_head * bh, *dir_block;
+    struct dir_entry * de;
+
+    // todo permission check
+    // 检查参数的有效性，取出需要被创建目录的父目录
+    if (!(dir = dir_namei(pathname,&namelen,&basename)))
+        return -ENOENT;
+
+    // 如果 namelen 为 0 说明没有指定需要被创建的目录名，释放资源并返回
+    if (!namelen) {
+        iput(dir);
+        return -ENOENT;
+    }
+
+    // 检查一下需要被创建的目录是否已经存在
+    bh = find_entry(&dir,basename,namelen,&de);
+    if (bh) {
+        brelse(bh);
+        iput(dir);
+        return -EEXIST;
+    }
+    // 为即将创建的目录文件分配一个 inode
+    inode = new_inode(dir->i_dev);
+    if (!inode) {
+        iput(dir);
+        return -ENOSPC;
+    }
+    // 设置 inode 对应的文件长度为 32 (两个目录项的大小，即 . 和 .. 目录项)
+    inode->i_size = 32;
+    inode->i_dirt = 1;
+    // inode->i_mtime = inode->i_atime = CURRENT_TIME;
+    // 为 inode 分配保存目录项的磁盘块，第一个直接块指向这个数据块
+    if (!(inode->i_zone[0]=new_block(inode->i_dev))) {
+        iput(dir);
+        inode->i_nlinks--;
+        iput(inode);
+        return -ENOSPC;
+    }
+    inode->i_dirt = 1;
+    // 读取一下刚刚分配的磁盘块，出错就释放这个数据块
+    if (!(dir_block=bread(inode->i_dev,inode->i_zone[0]))) {
+        iput(dir);
+        free_block(inode->i_dev,inode->i_zone[0]);
+        inode->i_nlinks--;
+        iput(inode);
+        return -ERROR;
+    }
+    // 如果没有出错就为这个目录文件添加两个目录项 . 和 ..
+    de = (struct dir_entry *) dir_block->b_data;
+    de->inode=inode->i_num;
+    strcpy(de->name,".");
+    de++;
+    de->inode = dir->i_num;
+    strcpy(de->name,"..");
+    // inode 引用计数为 2 包括，比如对于一个绝对路径 /usr/root/mydir 就包括了绝对路径本身和 . 两个引用
+    inode->i_nlinks = 2;
+    dir_block->b_dirt = 1;
+    brelse(dir_block);
+    // inode->i_mode = I_DIRECTORY | (mode & 0777 & ~current->umask);
+    // 设置目录文件的属性，包括文件类型(目录) 和访问权限控制位(定义在 include/sys/stat.h)
+    // 其中可执行位控制了是否能 cd 到这个目录的权限
+    inode->i_mode = I_DIRECTORY | mode & 0777;
+    inode->i_dirt = 1;
+    // 添加刚刚创建的这个目录文件到其父目录文件中
+    bh = add_entry(dir,basename,namelen,&de);
+    if (!bh) {
+        iput(dir);
+        free_block(inode->i_dev,inode->i_zone[0]);
+        inode->i_nlinks=0;
+        iput(inode);
+        return -ENOSPC;
+    }
+    // 设置目录项的 inode 为我们创建的目录文件的 inode 号，然后释放资源，等待保存到磁盘中
+    de->inode = inode->i_num;
+    bh->b_dirt = 1;
+    dir->i_nlinks++;
+    dir->i_dirt = 1;
+    iput(dir);
+    iput(inode);
+    brelse(bh);
+    return 0;
+}
+
 // 删除文件
 int sys_unlink(const char * name) {
     const char * basename;

@@ -13,6 +13,12 @@ __asm__ __volatile__("btsl %2,%3\n\tsetb %%al": \
 "=a" (res):"0" (0),"r" (nr),"m" (*(addr))); \
 res;})
 
+#define clear_bit(nr,addr) ({\
+register int res ; \
+__asm__ __volatile__("btrl %2,%3\n\tsetnb %%al": \
+"=a" (res):"0" (0),"r" (nr),"m" (*(addr))); \
+res;})
+
 // 从一个数据块 1024 字节中，找到第一个为 0 的位
 #define find_first_zero(addr) ({ \
 int __res; \
@@ -29,6 +35,38 @@ __asm__ __volatile__ ("cld\n" \
     "3:" \
     :"=c" (__res):"c" (0),"S" (addr)); \
 __res;})
+
+// 释放设备 dev 上的数据块，块号为 block
+void free_block(int dev, int block) {
+    struct super_block * sb;
+    struct buffer_head * bh;
+
+    if (!(sb = get_super(dev)))
+        panic("trying to free block on nonexistent device");
+    if (block < sb->s_firstdatazone || block >= sb->s_nzones)
+        panic("trying to free block not in datazone");
+    // 从 hash 表中找到该数据块，找到就释放
+    bh = get_hash_table(dev,block);
+    if (bh) {
+        if (bh->b_count != 1) {
+            printk("trying to free block (%04x:%d), count=%d\n",
+                dev,block,bh->b_count);
+            return;
+        }
+        // 复位已修改标志和更新标志
+        bh->b_dirt=0;
+        bh->b_uptodate=0;
+        brelse(bh);
+    }
+    // 复位 block 在逻辑块位图中的比特位
+    block -= sb->s_firstdatazone - 1 ;
+    if (clear_bit(block&8191,sb->s_zmap[block/8192]->b_data)) {
+        printk("block (%04x:%d) ",dev,block+sb->s_firstdatazone-1);
+        panic("free_block: bit already cleared");
+    }
+    // 标记逻辑块比特位所在的缓冲区更新标志
+    sb->s_zmap[block/8192]->b_dirt = 1;
+}
 
 // 向设备申请一个逻辑块
 // 首先要在超级块中的逻辑块位图找到第一个0值比特位并将其置位表示占用，

@@ -3,6 +3,7 @@
 #include <fcntl.h>
 
 #include <linux/fs.h>
+#include <sys/stat.h>
 
 #define EXT_MEM_K (*(unsigned short *)0x90002)        // 1M 以后的扩展内存大小，也是在 setup.s 中设置的
 #define DRIVE_INFO (*(struct drive_info *) 0x90080);  // 这个地址下的信息由 setup.s 设置,保存了 hd0 相关信息
@@ -45,7 +46,7 @@ void main(void) {
 
     sys_setup((void *) &drive_info);
 
-    sys_unlink("/usr/root/hello.c");
+    sys_mkdir("/usr/root/mydir", S_IRWXU | S_IRWXG | S_IRWXO);
     sys_sync();
 
     for (;;);

@@ -7,6 +7,17 @@
 #define static
 #define __LIBRARY__
 
+
+inline char * strcpy(char * dest,const char *src) {
+    __asm__("cld\n"
+        "1:\tlodsb\n\t"
+        "stosb\n\t"
+        "testb %%al,%%al\n\t"
+        "jne 1b"
+        ::"S" (src),"D" (dest));
+    return dest;
+}
+
 // 如果字符串 1 = 字符串 2 返回 0
 static inline int strncmp(const char * cs,const char * ct,int count)
 {
