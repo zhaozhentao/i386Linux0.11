@@ -18,6 +18,24 @@ inline char * strcpy(char * dest,const char *src) {
     return dest;
 }
 
+inline int strcmp(const char * cs,const char * ct) {
+    register int __res ;
+    __asm__("cld\n"
+        "1:\tlodsb\n\t"
+        "scasb\n\t"
+        "jne 2f\n\t"
+        "testb %%al,%%al\n\t"
+        "jne 1b\n\t"
+        "xorl %%eax,%%eax\n\t"
+        "jmp 3f\n"
+        "2:\tmovl $1,%%eax\n\t"
+        "jl 3f\n\t"
+        "negl %%eax\n"
+        "3:"
+        :"=a" (__res):"D" (cs),"S" (ct));
+    return __res;
+}
+
 // 如果字符串 1 = 字符串 2 返回 0
 static inline int strncmp(const char * cs,const char * ct,int count)
 {

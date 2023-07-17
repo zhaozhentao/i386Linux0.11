@@ -336,6 +336,139 @@ int sys_mkdir(const char * pathname, int mode) {
     return 0;
 }
 
+// 判断目录是否为空，空目录返回 1 ,否则返回 0
+static int empty_dir(struct m_inode * inode) {
+    int nr,block;
+    int len;
+    struct buffer_head * bh;
+    struct dir_entry * de;
+
+    // 一个目录里面至少包含 .. 和 . 目录，长度不应该小于2
+    len = inode->i_size / sizeof (struct dir_entry);
+    if (len<2 || !inode->i_zone[0] ||
+        !(bh=bread(inode->i_dev,inode->i_zone[0]))) {
+        printk("warning - bad directory on dev %04x\n",inode->i_dev);
+        return 0;
+    }
+    // 目录里面第 0 个目录项应该是 . 第 1 个目录项应该是 .. ，如果不是说明目录有问题
+    de = (struct dir_entry *) bh->b_data;
+    if (de[0].inode != inode->i_num || !de[1].inode ||
+        strcmp(".",de[0].name) || strcmp("..",de[1].name)) {
+        printk("warning - bad directory on dev %04x\n",inode->i_dev);
+        return 0;
+    }
+    // 来到这里说明目录中至少包含 . 和 .. 目录
+    nr = 2;
+    de += 2;
+    // 遍历一下目录其他的目录项，看看是否有 inode 不为 0 目录项
+    while (nr<len) {
+        if ((void *) de >= (void *) (bh->b_data+BLOCK_SIZE)) {
+            brelse(bh);
+            // 寻找第 nr 个目录项所在的磁盘块
+            block=bmap(inode,nr/DIR_ENTRIES_PER_BLOCK);
+            // 如果该磁盘块已经不用，则扫描下一个磁盘块
+            if (!block) {
+                nr += DIR_ENTRIES_PER_BLOCK;
+                continue;
+            }
+            // 如果磁盘块有效，从磁盘块开头扫描每一个目录项
+            if (!(bh=bread(inode->i_dev,block)))
+                return 0;
+            de = (struct dir_entry *) bh->b_data;
+        }
+        // 如果有不为 0 的目录项，说明目录不为空
+        if (de->inode) {
+            brelse(bh);
+            return 0;
+        }
+        // 扫描磁盘块中的每一个目录项
+        de++;
+        nr++;
+    }
+    // 是空目录返回 1
+    brelse(bh);
+    return 1;
+}
+
+// 删除目录，name 路径名，成功返回 0 ，失败返回错误号
+int sys_rmdir(const char * name) {
+    const char * basename;
+    int namelen;
+    struct m_inode * dir, * inode;
+    struct buffer_head * bh;
+    struct dir_entry * de;
+
+    // 检查被删除目录的父目录是否存在
+    if (!(dir = dir_namei(name,&namelen,&basename)))
+        return -ENOENT;
+    // 如果 namelen 为 0 说明删除的路径路径最后没有指出目录名
+    if (!namelen) {
+        iput(dir);
+        return -ENOENT;
+    }
+
+    // 从父目录中找出要删除的目录项
+    bh = find_entry(&dir,basename,namelen,&de);
+    if (!bh) {
+        iput(dir);
+        return -ENOENT;
+    }
+
+    // 通过目录项中的 inode 号找到目录文件的 inode
+    if (!(inode = iget(dir->i_dev, de->inode))) {
+        iput(dir);
+        brelse(bh);
+        return -EPERM;
+    }
+
+    // 检查 inode 是否能够被删除，引用计数如果大于 1 说明有符号连接，不能删除
+    if (inode->i_dev != dir->i_dev || inode->i_count>1) {
+        iput(dir);
+        iput(inode);
+        brelse(bh);
+        return -EPERM;
+    }
+    // 如果被删除的目录项 inode 等于包含该目录的 inode 即删除 . 目录项是不允许的
+    // 但是可以删除 ../dir 这样
+    if (inode == dir) {
+        iput(inode);
+        iput(dir);
+        brelse(bh);
+        return -EPERM;
+    }
+    // 如果删除的 inode 不是一个目录，返回错误
+    if (!S_ISDIR(inode->i_mode)) {
+        iput(inode);
+        iput(dir);
+        brelse(bh);
+        return -ENOTDIR;
+    }
+    // 如果被删除的目录不为空也不能删除
+    if (!empty_dir(inode)) {
+        iput(inode);
+        iput(dir);
+        brelse(bh);
+        return -ENOTEMPTY;
+    }
+    // 对于一个空目录，目录项链接数应该为 2 ，链接到本目录和上层目录
+    if (inode->i_nlinks != 2)
+        printk("empty directory has nlink!=2 (%d)",inode->i_nlinks);
+    // 将目录项 inode 标记为 0 表示释放
+    de->inode = 0;
+    bh->b_dirt = 1;
+    brelse(bh);
+    // 重置 inode 属性
+    inode->i_nlinks=0;
+    inode->i_dirt=1;
+    // 减少父目录链接数
+    dir->i_nlinks--;
+    // dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+    dir->i_dirt=1;
+    iput(dir);
+    iput(inode);
+    return 0;
+}
+
 // 删除文件
 int sys_unlink(const char * name) {
     const char * basename;

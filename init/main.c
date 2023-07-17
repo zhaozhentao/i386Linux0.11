@@ -46,7 +46,7 @@ void main(void) {
 
     sys_setup((void *) &drive_info);
 
-    sys_mkdir("/usr/root/mydir", S_IRWXU | S_IRWXG | S_IRWXO);
+    sys_rmdir("/usr/root/mydir");
     sys_sync();
 
     for (;;);
