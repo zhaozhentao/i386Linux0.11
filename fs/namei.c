@@ -7,6 +7,7 @@
 
 extern struct m_inode * root;
 
+// 从目录中查找指定的目录项，返回目录项所在的缓冲区
 static struct buffer_head * find_entry(struct m_inode ** dir,
     const char * name, int namelen, struct dir_entry ** res_dir) {
 	int entries;
@@ -127,7 +128,7 @@ static struct m_inode * get_dir(const char * pathname) {
     struct dir_entry * de;
 
     // 从根 inode 开始遍历
-    inode = root;
+    inode = iget(ROOT_DEV,ROOT_INO);
     pathname++;
 
     while(1) {
@@ -176,6 +177,43 @@ static struct m_inode * dir_namei(const char * pathname,
     *namelen = pathname-basename-1;
     *name = basename;
 
+    return dir;
+}
+
+// 通过路径获取文件 inode，对于很多其他的系统调用可以用这个函数来获取文件 inode
+struct m_inode * namei(const char * pathname) {
+    const char * basename;
+    int inr,dev,namelen;
+    struct m_inode * dir;
+    struct buffer_head * bh;
+    struct dir_entry * de;
+
+    // 获取文件父目录
+    if (!(dir = dir_namei(pathname,&namelen,&basename)))
+        return NULL;
+
+    // 检查路径中有没有给出文件名(最后是 / 结尾就是没有给出有效的文件名)
+    if (!namelen)
+        return dir;
+
+    // 查找文件目录项
+    bh = find_entry(&dir,basename,namelen,&de);
+    if (!bh) {
+        iput(dir);
+        return NULL;
+    }
+    // 文件的 inode 号
+    inr = de->inode;
+    // 文件所在的设备号
+    dev = dir->i_dev;
+    brelse(bh);
+    iput(dir);
+    dir=iget(dev,inr);
+    // todo 更新 inode 最后访问时间
+    if (dir) {
+        // dir->i_atime=CURRENT_TIME;
+        dir->i_dirt=1;
+    }
     return dir;
 }
 
@@ -526,6 +564,73 @@ int sys_unlink(const char * name) {
     // inode->i_ctime = CURRENT_TIME;
     iput(inode);
     iput(dir);
+    return 0;
+}
+
+// 给文件创建硬链接
+int sys_link(const char * oldname, const char * newname) {
+    struct dir_entry * de;
+    struct m_inode * oldinode, * dir;
+    struct buffer_head * bh;
+    const char * basename;
+    int namelen;
+
+    // 先检查原路径名的有效性，如果原路径存在而且不是目录，先取出原路径 inode
+    oldinode=namei(oldname);
+    if (!oldinode)
+        return -ENOENT;
+    // 判断 inode 是否目录
+    if (S_ISDIR(oldinode->i_mode)) {
+        iput(oldinode);
+        return -EPERM;
+    }
+    // 取出新路径的父目录，提取新路径的文件名
+    dir = dir_namei(newname,&namelen,&basename);
+    if (!dir) {
+        iput(oldinode);
+        return -EACCES;
+    }
+    if (!namelen) {
+        iput(oldinode);
+        iput(dir);
+        return -EPERM;
+    }
+    // 不能跨设备创建链接
+    if (dir->i_dev != oldinode->i_dev) {
+        iput(dir);
+        iput(oldinode);
+        return -EXDEV;
+    }
+    //if (!permission(dir,MAY_WRITE)) {
+    //    iput(dir);
+    //    iput(oldinode);
+    //    return -EACCES;
+    //}
+    // 检查新路径是否已经存在，如果已经存在不能创建
+    bh = find_entry(&dir,basename,namelen,&de);
+    if (bh) {
+        brelse(bh);
+        iput(dir);
+        iput(oldinode);
+        return -EEXIST;
+    }
+    // 添加新的目录项到新路径的父目录中
+    bh = add_entry(dir,basename,namelen,&de);
+    if (!bh) {
+        iput(dir);
+        iput(oldinode);
+        return -ENOSPC;
+    }
+    // 新的目录项 inode 指向旧的 inode
+    de->inode = oldinode->i_num;
+    bh->b_dirt = 1;
+    brelse(bh);
+    iput(dir);
+    // inode 引用计数增加
+    oldinode->i_nlinks++;
+    // oldinode->i_ctime = CURRENT_TIME;
+    oldinode->i_dirt = 1;
+    iput(oldinode);
     return 0;
 }
 

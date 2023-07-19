@@ -46,7 +46,7 @@ void main(void) {
 
     sys_setup((void *) &drive_info);
 
-    sys_rmdir("/usr/root/mydir");
+    sys_link("/usr/root/hello.c", "/usr/root/hello2.c");
     sys_sync();
 
     for (;;);

@@ -234,6 +234,9 @@ struct m_inode * iget(int dev,int nr) {
             inode = inode_table;
             continue;
         }
+        if (empty)
+            iput(empty);
+        return inode;
     }
     // 如果在 i 节点表没有找到指定的 i 节点，利用前面申请的空闲 i 节点
     if (!empty)
