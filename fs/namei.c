@@ -281,6 +281,9 @@ int open_namei(const char * pathname, int flag, int mode,
     if (!(inode=iget(dev,inr)))
         return -EACCES;
 
+    // 如果打开文件时设置了截断标志且是写操作就截断文件
+    if (flag & O_TRUNC)
+        truncate(inode);
     // 返回文件 inode
     *res_inode = inode;
     return 0;
