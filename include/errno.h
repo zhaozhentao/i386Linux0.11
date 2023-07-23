@@ -9,6 +9,7 @@
 #define EXDEV                   18      // 非法连接
 #define ENOTDIR                 20      // 不是目录文件
 #define ENOSPC                  28      // 没有空间
+#define ENOSYS                  38      // 功能还没实现
 #define ENOTEMPTY               39      // 目录不为空
 
 #endif
