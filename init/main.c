@@ -45,10 +45,7 @@ void main(void) {
     hd_init();
     sti();
 
-    sys_setup((void *) &drive_info);
-
-    sys_stat("/usr/root/hello.c", &stat);
-    printk("st_ino %d\n", stat.st_ino);
+    move_to_user_mode();
 
     for (;;);
 }

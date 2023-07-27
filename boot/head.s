@@ -1,4 +1,4 @@
-.global startup_32, pg_dir, idt
+.global gdt, startup_32, pg_dir, idt
 
 pg_dir:
 startup_32:

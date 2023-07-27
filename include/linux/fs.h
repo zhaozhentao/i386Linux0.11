@@ -20,6 +20,7 @@ void buffer_init(long buffer_end);
 #define Z_MAP_SLOTS 8                  // 逻辑块位图槽数
 #define SUPER_MAGIC 0x137F             // 文件系统魔数
 
+#define NR_OPEN 20                     // 打开文件数
 #define NR_INODE 32                    // 系统同时最多可以打开 i 节点个数
 #define NR_FILE 64                     // 系统最多打开文件个数
 #define NR_SUPER 8                     // 系统包含的超级块个数
