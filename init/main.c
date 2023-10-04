@@ -37,6 +37,7 @@ void main(void) {
         buffer_memory_end = 1*1024*1024;         // 如果内存小于 6M ，则 1M 以下的内存归内核使用
     main_memory_start = buffer_memory_end;       // main_memory_start 就是将来用来运行应用程序的内存，以内核内存结束的地
 
+    mem_init(main_memory_start, memory_end);
     con_init();
     trap_init();
     blk_dev_init();                                 // 初始化块设备结构
