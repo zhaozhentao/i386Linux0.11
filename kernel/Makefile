@@ -13,11 +13,13 @@ CFLAGS	+= -I../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = sched.o system_call.o traps.o asm.o panic.o printk.o vsprintf.o
+OBJS  = sched.o system_call.o traps.o asm.o fork.o panic.o printk.o vsprintf.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
 	sync
+
+fork.s fork.o: fork.c
 
 sched.o: sched.c
 

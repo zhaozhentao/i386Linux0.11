@@ -1,4 +1,39 @@
-.global timer_interrupt, hd_interrupt
+.global system_call, sys_fork, timer_interrupt, hd_interrupt
+
+state	= 0
+
+nr_system_calls = 74
+
+.align 2
+bad_sys_call:
+    movl $-1,%eax
+    iret
+
+.align 2
+reschedule:
+  pushl $ret_from_sys_call
+  jmp schedule
+
+.align 2
+system_call:
+  cmpl $nr_system_calls-1,%eax
+  ja bad_sys_call
+  push %ds
+  push %es
+  push %fs
+  pushl %edx
+  pushl %ecx		# push %ebx,%ecx,%edx as parameters
+  pushl %ebx		# to the system call
+  movl $0x10,%edx		# set up ds,es to kernel space
+  mov %dx,%ds
+  mov %dx,%es
+  movl $0x17,%edx		# fs points to local data space
+  mov %dx,%fs
+  call *sys_call_table(,%eax,4)
+  pushl %eax
+  movl current,%eax
+  cmpl $0,state(%eax)
+  jne reschedule
 
 .align 2
 timer_interrupt:
@@ -42,6 +77,22 @@ hd_interrupt:                     # 保护现场
   popl %ecx
   popl %eax
   iret
+
+.align 2
+sys_fork:
+  call find_empty_process
+  testl %eax,%eax
+  js 1f
+  push %gs
+  pushl %esi
+  pushl %edi
+  pushl %ebp
+  pushl %eax
+  call copy_process
+  addl $20,%esp
+1:
+  ret
+
 
 ret_from_sys_call:
 3:

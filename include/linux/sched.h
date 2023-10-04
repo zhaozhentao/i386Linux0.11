@@ -9,6 +9,20 @@
 #define NR_TASKS 64              // 最多可运行进程个数
 #define HZ 100
 
+#define FIRST_TASK task[0]
+#define LAST_TASK task[NR_TASKS-1]
+
+#define TASK_RUNNING		0
+#define TASK_INTERRUPTIBLE	1
+#define TASK_UNINTERRUPTIBLE	2
+#define TASK_ZOMBIE		3
+#define TASK_STOPPED		4
+
+extern int copy_page_tables(unsigned long from, unsigned long to, long size);
+extern int free_page_tables(unsigned long from, unsigned long size);
+
+typedef int (*fn_ptr)();
+
 // 数学协处理器结构，进程切换时保存执行状态信息
 struct i387_struct {
     long	cwd;
@@ -120,12 +134,68 @@ struct task_struct {
 	}, \
 }
 
+extern struct task_struct *task[NR_TASKS];
+extern struct task_struct *last_task_used_math;
+extern struct task_struct *current;
+extern long volatile jiffies;
+
 #define FIRST_TSS_ENTRY 4
 #define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
 #define _TSS(n) ((((unsigned long) n)<<4)+(FIRST_TSS_ENTRY<<3))
 #define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
 #define ltr(n) __asm__("ltr %%ax"::"a" (_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
+
+#define switch_to(n) {\
+struct {long a,b;} __tmp; \
+__asm__("cmpl %%ecx,current\n\t" \
+  "je 1f\n\t" \
+  "movw %%dx,%1\n\t" \
+  "xchgl %%ecx,current\n\t" \
+  "ljmp *%0\n\t" \
+  "cmpl %%ecx,last_task_used_math\n\t" \
+  "jne 1f\n\t" \
+  "clts\n" \
+  "1:" \
+  ::"m" (*&__tmp.a),"m" (*&__tmp.b), \
+  "d" (_TSS(n)),"c" ((long) task[n])); \
+}
+
+#define _set_base(addr,base)  \
+__asm__ ("push %%edx\n\t" \
+    "movw %%dx,%0\n\t" \
+    "rorl $16,%%edx\n\t" \
+    "movb %%dl,%1\n\t" \
+    "movb %%dh,%2\n\t" \
+    "pop %%edx" \
+    ::"m" (*((addr)+2)), \
+    "m" (*((addr)+4)), \
+    "m" (*((addr)+7)), \
+    "d" (base) \
+    )
+
+#define set_base(ldt,base) _set_base( ((char *)&(ldt)) , (base) )
+
+static inline unsigned long _get_base(char * addr)
+{
+    unsigned long __base;
+    __asm__("movb %3,%%dh\n\t"
+        "movb %2,%%dl\n\t"
+        "shll $16,%%edx\n\t"
+        "movw %1,%%dx"
+        :"=&d" (__base)
+        :"m" (*((addr)+2)),
+        "m" (*((addr)+4)),
+        "m" (*((addr)+7)));
+    return __base;
+}
+
+#define get_base(ldt) _get_base( ((char *)&(ldt)) )
+
+#define get_limit(segment) ({ \
+unsigned long __limit; \
+__asm__("lsll %1,%0\n\tincl %0":"=r" (__limit):"r" (segment)); \
+__limit;})
 
 #endif
 

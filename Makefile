@@ -5,7 +5,7 @@ include Makefile.header
 LDFLAGS	+= -Ttext 0 -e startup_32
 CFLAGS	+= -Iinclude
 
-ARCHIVES=kernel/kernel.o fs/fs.o
+ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
 DRIVERS=kernel/blk_drv/blk_drv.a kernel/chr_drv/chr_drv.a
 LIBS	=lib/lib.a
 
@@ -25,6 +25,9 @@ Image: boot/bootsect boot/setup tools/system
 	$(OBJCOPY) -O binary -R .note -R .comment system.tmp tools/kernel
 	tools/build.sh boot/bootsect boot/setup tools/kernel Image
 	$(OBJDUMP) -D -m i386 tools/system > system.dis
+
+mm/mm.o:
+	make -C mm
 
 fs/fs.o:
 	make -C fs
@@ -68,7 +71,7 @@ stop:
 
 clean:
 	rm -f Image *.dis *.tmp init/*.o system.debug System.map
-	for i in boot fs kernel lib; do make clean -C $$i; done
+	for i in mm fs kernel lib boot; do make clean -C $$i; done
 
 init/main.o: init/main.c
 

@@ -3,6 +3,10 @@
 
 typedef unsigned int sigset_t;		/* 32 bits */
 
+#define SIGKILL            9
+#define SIGALRM           14
+#define SIGSTOP           19
+
 // 信号处理数据结构
 struct sigaction {
     void (*sa_handler)(int);        // 信号的处理函数

@@ -1,3 +1,8 @@
+#define __LIBRARY__
+#include <unistd.h>
+
+static inline _syscall0(int,fork)
+
 #include <asm/system.h>
 
 #include <fcntl.h>
@@ -38,6 +43,7 @@ void main(void) {
     main_memory_start = buffer_memory_end;       // main_memory_start 就是将来用来运行应用程序的内存，以内核内存结束的地
 
     con_init();
+    mem_init(main_memory_start,memory_end);
     trap_init();
     blk_dev_init();                                 // 初始化块设备结构
     sched_init();

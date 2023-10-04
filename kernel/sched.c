@@ -1,12 +1,19 @@
 #include <linux/sched.h>
+#include <linux/sys.h>
 #include <asm/system.h>
 #include <asm/io.h>
+
+#include <signal.h>
+
+#define _S(nr) (1<<((nr)-1))
+#define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
 
 // 8253 芯片输入时钟频率约为 1.193180 MHz，Linux 内核希望定时器产生中断的频率是 100Hz ，即每 10ms 产生一次
 // 中断，这个是 8253 芯片的初始值
 #define LATCH (1193180/HZ)
 
 extern int timer_interrupt(void);
+extern int system_call(void);
 
 union task_union {
     struct task_struct task;
@@ -15,6 +22,10 @@ union task_union {
 
 // init 进程
 static union task_union init_task = {INIT_TASK,};
+
+long volatile jiffies=0;
+struct task_struct *current = &(init_task.task);
+struct task_struct *last_task_used_math = NULL;
 
 // 任务数组，最多 64 个任务
 struct task_struct * task[NR_TASKS] = {&(init_task.task), };
@@ -26,6 +37,44 @@ struct {
   long * a;
   short b;
 } stack_start = { & user_stack [PAGE_SIZE>>2] , 0x10 };
+
+void schedule(void) {
+    int i,next,c;
+    struct task_struct ** p;
+
+    /* check alarm, wake up any interruptible tasks that have got a signal */
+
+    for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+        if (*p) {
+            if ((*p)->alarm && (*p)->alarm < jiffies) {
+                (*p)->signal |= (1<<(SIGALRM-1));
+                (*p)->alarm = 0;
+            }
+            if (((*p)->signal & ~(_BLOCKABLE & (*p)->blocked)) &&
+                (*p)->state==TASK_INTERRUPTIBLE)
+                (*p)->state=TASK_RUNNING;
+        }
+
+    /* this is the scheduler proper: */
+
+    while (1) {
+        c = -1;
+        next = 0;
+        i = NR_TASKS;
+        p = &task[NR_TASKS];
+        while (--i) {
+            if (!*--p)
+            continue;
+            if ((*p)->state == TASK_RUNNING && (*p)->counter > c)
+            c = (*p)->counter, next = i;
+        }
+        if (c) break;
+        for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+            if (*p)
+                (*p)->counter = ((*p)->counter >> 1) + (*p)->priority;
+    }
+    switch_to(next);
+}
 
 void do_timer(long cpl) {
 
@@ -62,5 +111,6 @@ void sched_init(void) {
     outb(LATCH >> 8, 0x40);                    // MSB 高字节
     set_intr_gate(0x20, &timer_interrupt);     // 注册定时器中断
     outb(inb_p(0x21)&~0x01,0x21);              // 允许时钟中断
+    set_system_gate(0x80,&system_call);
 }
 
