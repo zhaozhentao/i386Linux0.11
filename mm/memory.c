@@ -9,6 +9,30 @@ static long HIGH_MEMORY = 0;
 // 物理内存字节映射图，一字节代表一页 (4K) ，每个字节保存的数值表示该内存页被引用的次数
 static unsigned char mem_map [ PAGING_PAGES ] = {0,};
 
+unsigned long get_free_page(void)
+{
+    register unsigned long __res asm("ax");
+
+    // 找出 mem_map 中第一个没有被占用的项，并返回起始地址
+    __asm__("std ; repne ; scasb\n\t"
+      "jne 1f\n\t"
+      "movb $1,1(%%edi)\n\t"
+      "sall $12,%%ecx\n\t"
+      "addl %2,%%ecx\n\t"
+      "movl %%ecx,%%edx\n\t"
+      "movl $1024,%%ecx\n\t"
+      "leal 4092(%%edx),%%edi\n\t"
+      "rep ; stosl\n\t"
+      " movl %%edx,%%eax\n"
+      "1: cld"
+      :"=a" (__res)
+      :"0" (0),"i" (LOW_MEM),"c" (PAGING_PAGES),
+      "D" (mem_map+PAGING_PAGES-1)
+      );
+    return __res;
+}
+
+
 void mem_init(long start_mem, long end_mem)
 {
     int i;
