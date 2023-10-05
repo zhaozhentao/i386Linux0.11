@@ -32,6 +32,19 @@ unsigned long get_free_page(void)
     return __res;
 }
 
+// 将 mem_map 中代表 addr 的一项清零，标记 addr 所在内存页可用
+void free_page(unsigned long addr)
+{
+    if (addr < LOW_MEM) return;
+    if (addr >= HIGH_MEMORY)
+        panic("trying to free nonexistent page");
+    addr -= LOW_MEM;
+    // 内存地址转换为 mem_map 页号
+    addr >>= 12;
+    if (mem_map[addr]--) return;
+        mem_map[addr]=0;
+    panic("trying to free free page");
+}
 
 void mem_init(long start_mem, long end_mem)
 {
