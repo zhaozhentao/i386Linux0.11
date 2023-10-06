@@ -84,6 +84,63 @@ int free_page_tables(unsigned long from,unsigned long size)
     return 0;
 }
 
+// 复制页目录表项和页表项
+// 新复制出来的页表各项和原来被复制的页表项都指向相同的内存(共享)，指导有父子进程其中一个有写操作才真正分配新内存
+// 写时复制
+int copy_page_tables(unsigned long from,unsigned long to,long size)
+{
+    unsigned long * from_page_table;
+    unsigned long * to_page_table;
+    unsigned long this_page;
+    unsigned long * from_dir, * to_dir;
+    unsigned long nr;
+
+    if ((from&0x3fffff) || (to&0x3fffff))
+        panic("copy_page_tables called with wrong alignment");
+    // 这里的计算和 free_page_tables 一样，计算目录项地址，size 也是
+    from_dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
+    to_dir = (unsigned long *) ((to>>20) & 0xffc);
+    size = ((unsigned) (size+0x3fffff)) >> 22;
+    // 开始复制页目录项
+    for( ; size-->0 ; from_dir++,to_dir++) {
+        // 如果已经存在，死机
+        if (1 & *to_dir)
+            panic("copy_page_tables: already exist");
+        // 源不存在进行下一个 页目录复制
+        if (!(1 & *from_dir))
+            continue;
+
+        // 根据页目录项找到页表起始地址
+        from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
+        // 从主内存中申请一页内存，用作目标页表
+        if (!(to_page_table = (unsigned long *) get_free_page()))
+            return -1;	/* Out of memory, see freeing */
+        // 将页表地址存放到页目录，设置相应的权限为 7 ，表示权限为用户级，可读写，存在(Usr, RW, Present)
+        *to_dir = ((unsigned long) to_page_table) | 7;
+        // 这里的判断是用来处理内核第一次 fork ，只复制 640KB 内存(当时认为内核大小不超过这个数，复制太多会浪费内存)
+        nr = (from==0)?0xA0:1024;
+        // 复制页表下的每项
+        for ( ; nr-- > 0 ; from_page_table++,to_page_table++) {
+            this_page = *from_page_table;
+            // 如果该页没有使用，继续下一个页检查
+            if (!(1 & this_page))
+                continue;
+            // 复位内存页的 RW 位(1 设置为 0)，将内存页设置为只读(为将来的写时复制做准备)
+            this_page &= ~2;
+            *to_page_table = this_page;
+            // 如果该页内存地址大于 LOW_MEM，则需要在 mem_map 管理表中将引用次数增加
+            if (this_page > LOW_MEM) {
+                *from_page_table = this_page;
+                this_page -= LOW_MEM;
+                this_page >>= 12;
+                mem_map[this_page]++;
+            }
+        }
+    }
+    invalidate();
+    return 0;
+}
+
 void mem_init(long start_mem, long end_mem)
 {
     int i;
