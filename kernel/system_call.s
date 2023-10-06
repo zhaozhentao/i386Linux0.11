@@ -1,7 +1,40 @@
-.global system_call, timer_interrupt, hd_interrupt
+.global system_call, sys_fork, timer_interrupt, hd_interrupt
+
+state	= 0		# these are offsets into the task-struct.
+counter	= 4
+
+nr_system_calls = 74              # 系统调用总数
+
+.align 2
+bad_sys_call:
+  movl $-1, %eax                  # 设置 eax 寄存器为 -1 后结束中断
+  iret
+
+.align 2
+reschedule:
 
 .align 2
 system_call:
+  cmpl $nr_system_calls-1,%eax    # 如果调用号超出返回就退出
+  ja bad_sys_call
+  push %ds                        # 保存原来的段寄存器
+  push %es
+  push %fs
+  pushl %edx                      # 入栈的这几个寄存器保存了系统调用的参数(最多三个)，参数和寄存器是 gcc 决定的 ebx 是第一个采纳数 ecx 是第二个参数 edx 是第三个参数
+  pushl %ecx
+  pushl %ebx
+  movl $0x10,%edx                 # es ds 指向内核数据段
+  mov %dx,%ds
+  mov %dx,%es
+  movl $0x17,%edx                 # fs 指向局部数据段，即发起本次系统调用的用户程序的数据段
+  mov %dx,%fs
+  call *sys_call_table(,%eax,4)   # 这里根据功能号去调用对应的处理程序
+  pushl %eax
+  movl current,%eax
+  cmpl $0,state(%eax)             # 如果任务不在就绪状态就去执行调度程序
+  jne reschedule
+  cmpl $0,counter(%eax)           # 如果任务的时间片用完就去执行调度程序
+  je reschedule
 
 .align 2
 timer_interrupt:
@@ -16,6 +49,9 @@ timer_interrupt:
   outb %al, $0x20
   call do_timer                   # 调用 c 实现的中断处理函数
   jmp ret_from_sys_call
+
+.align 2
+sys_fork:
 
 hd_interrupt:                     # 保护现场
   pushl %eax

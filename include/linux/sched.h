@@ -9,6 +9,8 @@
 #define NR_TASKS 64              // 最多可运行进程个数
 #define HZ 100
 
+typedef int (*fn_ptr)();
+
 // 数学协处理器结构，进程切换时保存执行状态信息
 struct i387_struct {
     long	cwd;

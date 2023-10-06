@@ -1,4 +1,5 @@
 #include <linux/sched.h>
+#include <linux/sys.h>
 #include <asm/system.h>
 #include <asm/io.h>
 
@@ -16,6 +17,8 @@ union task_union {
 
 // init 进程
 static union task_union init_task = {INIT_TASK,};
+
+struct task_struct *current = &(init_task.task);
 
 // 任务数组，最多 64 个任务
 struct task_struct * task[NR_TASKS] = {&(init_task.task), };
