@@ -1,4 +1,7 @@
-.global timer_interrupt, hd_interrupt
+.global system_call, timer_interrupt, hd_interrupt
+
+.align 2
+system_call:
 
 .align 2
 timer_interrupt:
