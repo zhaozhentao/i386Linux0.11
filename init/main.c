@@ -1,3 +1,8 @@
+#define __LIBRARY__
+#include <unistd.h>
+
+static inline _syscall0(int,fork)
+
 #include <asm/system.h>
 
 #include <fcntl.h>
