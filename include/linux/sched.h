@@ -122,6 +122,8 @@ struct task_struct {
 	}, \
 }
 
+extern struct task_struct *task[NR_TASKS];
+
 #define FIRST_TSS_ENTRY 4
 #define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
 #define _TSS(n) ((((unsigned long) n)<<4)+(FIRST_TSS_ENTRY<<3))

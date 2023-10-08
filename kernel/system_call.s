@@ -52,6 +52,7 @@ timer_interrupt:
 
 .align 2
 sys_fork:
+  call find_empty_process
 
 hd_interrupt:                     # 保护现场
   pushl %eax
