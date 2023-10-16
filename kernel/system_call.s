@@ -53,6 +53,17 @@ timer_interrupt:
 .align 2
 sys_fork:
   call find_empty_process
+  testl %eax,%eax                 # 如果返回的 pid 为负数就退出
+  js 1f
+  push %gs
+  pushl %esi
+  pushl %edi
+  pushl %ebp
+  pushl %eax
+  call copy_process               # 调用 c 函数
+  addl $20,%esp                   # 丢弃所有压栈内容
+1:
+  ret
 
 hd_interrupt:                     # 保护现场
   pushl %eax

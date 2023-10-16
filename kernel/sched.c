@@ -18,7 +18,9 @@ union task_union {
 // init 进程
 static union task_union init_task = {INIT_TASK,};
 
+long volatile jiffies=0;
 struct task_struct *current = &(init_task.task);
+struct task_struct *last_task_used_math = NULL;
 
 // 任务数组，最多 64 个任务
 struct task_struct * task[NR_TASKS] = {&(init_task.task), };
