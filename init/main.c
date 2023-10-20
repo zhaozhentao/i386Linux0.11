@@ -53,5 +53,7 @@ void main(void) {
 
     move_to_user_mode();
 
+    fork();
+
     for (;;);
 }

@@ -36,6 +36,16 @@ system_call:
   cmpl $0,counter(%eax)           # 如果任务的时间片用完就去执行调度程序
   je reschedule
 
+ret_from_sys_call:
+  popl %eax
+  popl %ebx
+  popl %ecx
+  popl %edx
+  pop %fs
+  pop %es
+  pop %ds
+  iret
+
 .align 2
 timer_interrupt:
   push %ds                        # 保护现场
@@ -92,16 +102,5 @@ hd_interrupt:                     # 保护现场
   popl %edx
   popl %ecx
   popl %eax
-  iret
-
-ret_from_sys_call:
-3:
-  popl %eax                       # 恢复现场
-  popl %ebx
-  popl %ecx
-  popl %edx
-  pop %fs
-  pop %es
-  pop %ds
   iret
 
