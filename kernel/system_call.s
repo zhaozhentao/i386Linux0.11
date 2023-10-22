@@ -1,5 +1,7 @@
 .global system_call, sys_fork, timer_interrupt, hd_interrupt
 
+CS		= 0x20
+
 state	= 0		# these are offsets into the task-struct.
 counter	= 4
 
@@ -55,9 +57,19 @@ timer_interrupt:
   pushl %ecx
   pushl %ebx
   pushl %eax
+  movl $0x10,%eax
+  mov %ax,%ds
+  mov %ax,%es
+  movl $0x17,%eax
+  mov %ax,%fs
+  incl jiffies
   movb $0x20, %al                 # 清除中断标志,以便能够重新被触发中断
   outb %al, $0x20
+  movl CS(%esp),%eax
+  andl $3,%eax
+  pushl %eax
   call do_timer                   # 调用 c 实现的中断处理函数
+  addl $4,%esp
   jmp ret_from_sys_call
 
 .align 2

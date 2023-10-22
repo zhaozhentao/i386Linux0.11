@@ -1,16 +1,20 @@
 #ifndef _SCHED_H
 #define _SCHED_H
 
+#define NR_TASKS 64              // 最多可运行进程个数
+#define HZ 100
+
+#define FIRST_TASK task[0]
+#define LAST_TASK task[NR_TASKS-1]
+
 #include <linux/head.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
 #include <signal.h>
 
-#define NR_TASKS 64              // 最多可运行进程个数
-#define HZ 100
-
-#define TASK_RUNNING		0
-#define TASK_UNINTERRUPTIBLE	2
+#define TASK_RUNNING            0
+#define TASK_INTERRUPTIBLE      1
+#define TASK_UNINTERRUPTIBLE    2
 
 typedef int (*fn_ptr)();
 
@@ -136,6 +140,21 @@ extern long volatile jiffies;
 #define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
 #define ltr(n) __asm__("ltr %%ax"::"a" (_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
+
+#define switch_to(n) {\
+struct {long a,b;} __tmp; \
+__asm__("cmpl %%ecx,current\n\t" \
+	"je 1f\n\t" \
+	"movw %%dx,%1\n\t" \
+	"xchgl %%ecx,current\n\t" \
+	"ljmp *%0\n\t" \
+	"cmpl %%ecx,last_task_used_math\n\t" \
+	"jne 1f\n\t" \
+	"clts\n" \
+	"1:" \
+	::"m" (*&__tmp.a),"m" (*&__tmp.b), \
+	"d" (_TSS(n)),"c" ((long) task[n])); \
+}
 
 #define _set_base(addr,base)  \
 __asm__ ("push %%edx\n\t" \

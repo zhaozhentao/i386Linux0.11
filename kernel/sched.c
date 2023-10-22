@@ -3,6 +3,11 @@
 #include <asm/system.h>
 #include <asm/io.h>
 
+#include <signal.h>
+
+#define _S(nr) (1<<((nr)-1))
+#define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
+
 // 8253 芯片输入时钟频率约为 1.193180 MHz，Linux 内核希望定时器产生中断的频率是 100Hz ，即每 10ms 产生一次
 // 中断，这个是 8253 芯片的初始值
 #define LATCH (1193180/HZ)
@@ -33,8 +38,50 @@ struct {
   short b;
 } stack_start = { & user_stack [PAGE_SIZE>>2] , 0x10 };
 
-void do_timer(long cpl) {
+void schedule(void) {
+    int i,next,c;
+    struct task_struct ** p;
 
+    for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+        if (*p) {
+            if ((*p)->alarm && (*p)->alarm < jiffies) {
+                (*p)->signal |= (1<<(SIGALRM-1));
+                (*p)->alarm = 0;
+            }
+            if (((*p)->signal & ~(_BLOCKABLE & (*p)->blocked)) &&
+                (*p)->state==TASK_INTERRUPTIBLE)
+                (*p)->state=TASK_RUNNING;
+        }
+    while (1) {
+        c = -1;
+        next = 0;
+        i = NR_TASKS;
+        p = &task[NR_TASKS];
+        while (--i) {
+            if (!*--p)
+                continue;
+            if ((*p)->state == TASK_RUNNING && (*p)->counter > c)
+                c = (*p)->counter, next = i;
+        }
+        if (c) break;
+        for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+            if (*p)
+                (*p)->counter = ((*p)->counter >> 1) +
+                    (*p)->priority;
+    }
+    switch_to(next);
+}
+
+void do_timer(long cpl) {
+    if (cpl)
+        current->utime++;
+    else
+        current->stime++;
+
+    if ((--current->counter)>0) return;
+    current->counter=0;
+    if (!cpl) return;
+    schedule();
 }
 
 void sched_init(void) {

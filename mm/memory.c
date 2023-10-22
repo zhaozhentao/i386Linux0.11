@@ -1,3 +1,14 @@
+#include <signal.h>
+
+void do_exit(long code);
+
+static inline void oom(void)
+{
+	printk("out of memory\n\r");
+    // todo this
+    for(;;);
+}
+
 #define invalidate() \
 __asm__("movl %%eax,%%cr3"::"a" (0))
 
@@ -8,6 +19,9 @@ __asm__("movl %%eax,%%cr3"::"a" (0))
 #define USED 100
 
 static long HIGH_MEMORY = 0;
+
+#define copy_page(from,to) \
+__asm__("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024))
 
 // 物理内存字节映射图，一字节代表一页 (4K) ，每个字节保存的数值表示该内存页被引用的次数
 static unsigned char mem_map [ PAGING_PAGES ] = {0,};
@@ -139,6 +153,35 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
     }
     invalidate();
     return 0;
+}
+
+void un_wp_page(unsigned long * table_entry)
+{
+	unsigned long old_page,new_page;
+
+	old_page = 0xfffff000 & *table_entry;
+	if (old_page >= LOW_MEM && mem_map[MAP_NR(old_page)]==1) {
+		*table_entry |= 2;
+		invalidate();
+		return;
+	}
+	if (!(new_page=get_free_page()))
+		oom();
+	if (old_page >= LOW_MEM)
+		mem_map[MAP_NR(old_page)]--;
+	*table_entry = new_page | 7;
+	invalidate();
+	copy_page(old_page,new_page);
+}
+
+void do_wp_page(unsigned long error_code,unsigned long address) {
+    un_wp_page((unsigned long *)
+        (((address>>10) & 0xffc) + (0xfffff000 &
+        *((unsigned long *) ((address>>20) &0xffc)))));
+}
+
+void do_no_page(unsigned long error_code,unsigned long address) {
+
 }
 
 void mem_init(long start_mem, long end_mem)
