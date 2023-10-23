@@ -9,6 +9,9 @@
 #define NR_TASKS 64              // 最多可运行进程个数
 #define HZ 100
 
+#define FIRST_TASK task[0]
+#define LAST_TASK task[NR_TASKS-1]
+
 #define TASK_RUNNING		0
 #define TASK_UNINTERRUPTIBLE	2
 
@@ -136,6 +139,33 @@ extern long volatile jiffies;
 #define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
 #define ltr(n) __asm__("ltr %%ax"::"a" (_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
+
+// 临时变量 __tmp 作为 ljmp 跳转的参数，该参数由 4 字节偏移量和 2 字节段选择符组成
+// __tmp a 中存放偏移量 b 中存放新 tss 段选择符 (高 2 字节不用)
+// 但对于造成任务切换的 ljmp, a 值是无用的
+// 检查要切换的任务 n 是当前任务吗，是的话返回
+// 将新任务的 tss 16 位选择符放到 tmp.b 中
+//
+// cmpl %%ecx,current 比较要跳转的是不是当前任务
+// je 1f 跳转的任务是当前任务，什么都不做
+// movw %%dx,%1 将新任务的 tss 16 位选择符放入 __tmp.b
+// xchgl %%ecx,current 交换 current = task[n] ecx = 原来的 current 即被切出的任务
+// ljmp *%0 跳转到 *&__tmp 任务切换
+// cmpl %%ecx,last_task_used_math 任务切换成功后检查数学协处理器相关
+#define switch_to(n) {\
+struct {long a,b;} __tmp; \
+__asm__("cmpl %%ecx,current\n\t" \
+	"je 1f\n\t" \
+	"movw %%dx,%1\n\t" \
+	"xchgl %%ecx,current\n\t" \
+	"ljmp *%0\n\t" \
+	"cmpl %%ecx,last_task_used_math\n\t" \
+	"jne 1f\n\t" \
+	"clts\n" \
+	"1:" \
+	::"m" (*&__tmp.a),"m" (*&__tmp.b), \
+	"d" (_TSS(n)),"c" ((long) task[n])); \
+}
 
 #define _set_base(addr,base)  \
 __asm__ ("push %%edx\n\t" \

@@ -1,7 +1,9 @@
 .global system_call, sys_fork, timer_interrupt, hd_interrupt
 
-state	= 0		# these are offsets into the task-struct.
-counter	= 4
+CS      = 0x20
+
+state   = 0		# these are offsets into the task-struct.
+counter = 4
 
 nr_system_calls = 74              # 系统调用总数
 
@@ -55,9 +57,19 @@ timer_interrupt:
   pushl %ecx
   pushl %ebx
   pushl %eax
+  movl $0x10,%eax                 # 设置数据段和附加段选择符为内核段
+  mov %ax,%ds
+  mov %ax,%es
+  movl $0x17,%eax                 # fs 指向局部数据段
+  mov %ax,%fs
+  incl jiffies                    # 每 10 毫秒增加 1
   movb $0x20, %al                 # 清除中断标志,以便能够重新被触发中断
   outb %al, $0x20
+  movl CS(%esp),%eax              # 从堆栈中取出执行系统调用的代码选择符（CS 段寄存器值）,将当前特权级压入堆栈作为 do_timer 参数
+  andl $3,%eax                    # 掩码作用, 3 是二进制的 11 ，使得 eax = 3 & eax ，值保留最低两位
+  pushl %eax                      # 特权级压入栈，作为参数
   call do_timer                   # 调用 c 实现的中断处理函数
+  addl $4,%esp                    # 将前面 pushl %eax 压入栈的参数出栈
   jmp ret_from_sys_call
 
 .align 2

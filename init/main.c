@@ -53,7 +53,11 @@ void main(void) {
 
     move_to_user_mode();
 
-    fork();
+    if (fork()) {
+        // fork 返回值 > 0 ，运行子进程代码
+        for (;;);
+    }
 
+    // 父进程代码
     for (;;);
 }

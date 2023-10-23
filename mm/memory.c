@@ -1,3 +1,8 @@
+static inline void oom(void) {
+    // todo oom
+    printk("out of memory\n\r");
+}
+
 #define invalidate() \
 __asm__("movl %%eax,%%cr3"::"a" (0))
 
@@ -8,6 +13,10 @@ __asm__("movl %%eax,%%cr3"::"a" (0))
 #define USED 100
 
 static long HIGH_MEMORY = 0;
+
+// 复制一页内存
+#define copy_page(from,to) \
+__asm__("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024))
 
 // 物理内存字节映射图，一字节代表一页 (4K) ，每个字节保存的数值表示该内存页被引用的次数
 static unsigned char mem_map [ PAGING_PAGES ] = {0,};
@@ -139,6 +148,49 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
     }
     invalidate();
     return 0;
+}
+
+// 分配一页新的内存，使触发写保护中断的线性地址指向新分配的空间
+void un_wp_page(unsigned long * table_entry) {
+    unsigned long old_page,new_page;
+
+    // 取页表中存放的物理地址
+    old_page = 0xfffff000 & *table_entry;
+    // 如果指向的内存地址在主内存区(old_page >= LOW_MEM) 且仅被引用一次(mem_map[MAP_NR(old_page)]==1)
+    // 那么设置页表属性 RW ，直接把属性改为可读写即可
+    if (old_page >= LOW_MEM && mem_map[MAP_NR(old_page)]==1) {
+        *table_entry |= 2;
+        invalidate();
+        return;
+    }
+    // 否则要为该页表项重新分配一页内存，然后该页表项指向它
+    if (!(new_page=get_free_page()))
+        oom();
+    // 原本的内存页引用次数减 1 ，因为我们要分配一页新的内存
+    if (old_page >= LOW_MEM)
+        mem_map[MAP_NR(old_page)]--;
+    // 指向新分配的内存
+    *table_entry = new_page | 7;
+    invalidate();
+    // 写时复制，将旧内存页的内容复制到分配到的内存页
+    copy_page(old_page,new_page);
+}
+
+// 写时复制，将被设置为写保护的内存页复制，并接触写保护
+void do_wp_page(unsigned long error_code,unsigned long address) {
+    // address 为触发写保护异常的线性地址。
+    // 将线性地址转换为页表项
+    // address >> 10 = address >> 12 << 2 , >> 12 是为了取出页表项在页目录中的索引，
+    // 因为每一个页表项 4 字节，所以该页目录项在页表中的偏移地址为'索引 << 2',所以这里得到的是页表中的偏移地址
+    // address >> 20 =address >> 22 << 2 ，同理，这里是页目录项索引，所以这里是取页目录表中的偏移地址(因为页目录是 0 地址开始，所以偏移地址实际上也等于该页目录项的地址, 0 + 偏移地址)，
+    // 最后 * (unsigned long *) 表示取出页目录项中的页表地址，页表地址 + 页表偏移地址 = 页表项的物理地址
+    un_wp_page((unsigned long *)
+        (((address>>10) & 0xffc) + (0xfffff000 &
+        *((unsigned long *) ((address>>20) &0xffc)))));
+}
+
+void do_no_page(unsigned long error_code,unsigned long address) {
+
 }
 
 void mem_init(long start_mem, long end_mem)

@@ -33,8 +33,44 @@ struct {
   short b;
 } stack_start = { & user_stack [PAGE_SIZE>>2] , 0x10 };
 
-void do_timer(long cpl) {
+void schedule(void) {
+    int i,next,c;
+    struct task_struct ** p;
 
+    // 从任务数组中找出 counter 最大的任务赋值到 next （运行时间还不长）
+    while (1) {
+        c = -1;
+        next = 0;
+        i = NR_TASKS;
+        p = &task[NR_TASKS];
+        while (--i) {
+            if (!*--p)
+                continue;
+            if ((*p)->state == TASK_RUNNING && (*p)->counter > c)
+                c = (*p)->counter, next = i;
+        }
+        // 如果找到 counter 不为 0 的任务，就可以退出循环，切换到该进程
+        if (c) break;
+
+        // 如果找不到可以运行的进程，则重置每个任务的 counter ,计算方式为 counter = counter / 2 + priority 
+        // priority 为任务优先级
+        for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+            if (*p)
+                (*p)->counter = ((*p)->counter >> 1) + (*p)->priority;
+    }
+
+    // 切换到该进程
+    switch_to(next);
+}
+
+void do_timer(long cpl) {
+    // 如果进程时间片还没用完，返回，否则置任务运行计数为0
+    if ((--current->counter)>0) return;
+    current->counter=0;
+    // 如果定时中断发生在内核程序，不做处理，返回
+    if (!cpl) return;
+    // 触发调度
+    schedule();
 }
 
 void sched_init(void) {

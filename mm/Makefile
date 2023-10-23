@@ -13,7 +13,7 @@ CPP	+= -I../include
 	@$(CC) $(CFLAGS) \
 	-S -o $*.s $<
 
-OBJS = memory.o
+OBJS = memory.o page.o
 
 all: mm.o
 
