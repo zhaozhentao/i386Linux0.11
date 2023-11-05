@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 static inline _syscall0(int,fork)
+static inline _syscall1(int,setup,void *,BIOS)
 
 #include <asm/system.h>
 
@@ -53,11 +54,16 @@ void main(void) {
 
     move_to_user_mode();
 
-    if (fork()) {
-        // fork 返回值 > 0 ，运行子进程代码
-        for (;;);
+    if (!fork()) {
+        init();
     }
 
-    // 父进程代码
     for (;;);
 }
+
+void init(void) {
+    int pid,i;
+
+    setup((void *) &drive_info);
+}
+
