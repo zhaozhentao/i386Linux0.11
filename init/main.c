@@ -66,5 +66,6 @@ void init(void) {
 
     setup((void *) &drive_info);
     (void) open("/dev/tty0",O_RDWR,0);
+    write(0, "hello tty0\n", 11);
 }
 
