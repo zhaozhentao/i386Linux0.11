@@ -23,6 +23,8 @@ struct tty_struct {
     struct tty_queue secondary;                                    // tty 辅助缓冲区，存放规范模式(又叫熟模式)字符序列
 };
 
+extern struct tty_struct tty_table[];
+
 // 缓冲区指针向前移 1 字节，超出缓冲区则回到 0 ，就是我们平时说的环形缓冲区
 #define INC(a) ((a) = ((a)+1) & (TTY_BUF_SIZE-1))
 // 缓冲区空闲长度

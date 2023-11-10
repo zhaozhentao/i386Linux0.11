@@ -107,6 +107,35 @@ int new_block(int dev) {
     return j;
 }
 
+void free_inode(struct m_inode * inode)
+{
+    struct super_block * sb;
+    struct buffer_head * bh;
+
+    if (!inode)
+        return;
+    if (!inode->i_dev) {
+        memset(inode,0,sizeof(*inode));
+        return;
+    }
+    if (inode->i_count>1) {
+        printk("trying to free inode with count=%d\n",inode->i_count);
+        panic("free_inode");
+    }
+    if (inode->i_nlinks)
+        panic("trying to free inode with links");
+    if (!(sb = get_super(inode->i_dev)))
+        panic("trying to free inode on nonexistent device");
+    if (inode->i_num < 1 || inode->i_num > sb->s_ninodes)
+        panic("trying to free inode 0 or nonexistant inode");
+    if (!(bh=sb->s_imap[inode->i_num>>13]))
+        panic("nonexistent imap in superblock");
+    if (clear_bit(inode->i_num&8191,bh->b_data))
+        printk("free_inode: bit already cleared.\n\r");
+    bh->b_dirt = 1;
+    memset(inode,0,sizeof(*inode));
+}
+
 // 从内存中获取一个空闲的 inode ，并从 inode 位图中获取一个空闲 inode (磁盘中的)
 struct m_inode * new_inode(int dev) {
     struct m_inode * inode;
@@ -142,8 +171,8 @@ struct m_inode * new_inode(int dev) {
     inode->i_count=1;
     inode->i_nlinks=1;
     inode->i_dev=dev;
-    //inode->i_uid=current->euid;
-    //inode->i_gid=current->egid;
+    inode->i_uid=current->euid;
+    inode->i_gid=current->egid;
     // 记录 inode 号，需要写入到磁盘中
     inode->i_dirt=1;
     inode->i_num = j + i*8192;

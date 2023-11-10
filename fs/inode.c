@@ -1,4 +1,7 @@
-#include <linux/fs.h>
+#include <sys/stat.h>
+
+#include <linux/sched.h>
+#include <asm/system.h>
 
 // 内存中的 i 节点表
 struct m_inode inode_table[NR_INODE]={{0,},};
@@ -7,7 +10,10 @@ static void read_inode(struct m_inode * inode);
 static void write_inode(struct m_inode * inode);
 
 static inline void wait_on_inode(struct m_inode * inode) {
-
+    cli();
+    while (inode->i_lock)
+        sleep_on(&inode->i_wait);
+    sti();
 }
 
 static inline void lock_inode(struct m_inode * inode) {
@@ -171,14 +177,43 @@ void iput(struct m_inode * inode) {
     wait_on_inode(inode);
     if (!inode->i_count)
         panic("iput: trying to free free inode");
+
+    // todo pipe
+    //if (inode->i_pipe) {
+    //    wake_up(&inode->i_wait);
+    //    if (--inode->i_count)
+    //        return;
+    //    free_page(inode->i_size);
+    //    inode->i_count=0;
+    //    inode->i_dirt=0;
+    //    inode->i_pipe=0;
+    //    return;
+    //}
     // 设备号为 0  引用直接减 1 返回
     if (!inode->i_dev) {
         inode->i_count--;
         return;
     }
+
+    if (S_ISBLK(inode->i_mode)) {
+        sync_dev(inode->i_zone[0]);
+        wait_on_inode(inode);
+    }
+
+repeat:
     if (inode->i_count>1) {
         inode->i_count--;
         return;
+    }
+    if (!inode->i_nlinks) {
+        truncate(inode);
+        free_inode(inode);
+        return;
+    }
+    if (inode->i_dirt) {
+        write_inode(inode);	/* we can sleep - so do again */
+        wait_on_inode(inode);
+        goto repeat;
     }
     inode->i_count--;
     return;

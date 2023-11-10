@@ -63,6 +63,30 @@ void schedule(void) {
     switch_to(next);
 }
 
+void sleep_on(struct task_struct **p) {
+    struct task_struct *tmp;
+
+    if (!p)
+        return;
+    if (current == &(init_task.task))
+        panic("task[0] trying to sleep");
+    tmp = *p;
+    *p = current;
+    current->state = TASK_UNINTERRUPTIBLE;
+    schedule();
+    if (tmp)
+        tmp->state=0;
+}
+
+void wake_up(struct task_struct **p)
+{
+    if (p && *p) {
+        (**p).state=0;
+        *p=NULL;
+    }
+}
+
+
 void do_timer(long cpl) {
     // 如果进程时间片还没用完，返回，否则置任务运行计数为0
     if ((--current->counter)>0) return;

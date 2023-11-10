@@ -65,5 +65,6 @@ void init(void) {
     int pid,i;
 
     setup((void *) &drive_info);
+    (void) open("/dev/tty0",O_RDWR,0);
 }
 

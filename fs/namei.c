@@ -1,11 +1,50 @@
 #include <linux/sched.h>
+#include <linux/kernel.h>
+#include <asm/segment.h>
 
 #include <fcntl.h>
 #include <errno.h>
 #include <const.h>
 #include <sys/stat.h>
 
+#define ACC_MODE(x) ("\004\002\006\377"[(x)&O_ACCMODE])
+
+#define MAY_WRITE 2
+
+static int permission(struct m_inode * inode,int mask)
+{
+    int mode = inode->i_mode;
+
+    /* special case: not even root can read/write a deleted file */
+    if (inode->i_dev && !inode->i_nlinks)
+        return 0;
+    else if (current->euid==inode->i_uid)
+        mode >>= 6;
+    else if (current->egid==inode->i_gid)
+        mode >>= 3;
+    if (((mode & mask & 0007) == mask) || suser())
+        return 1;
+    return 0;
+}
+
 extern struct m_inode * root;
+
+static int match(int len,const char * name,struct dir_entry * de)
+{
+	register int same ;
+
+	if (!de || !de->inode || len > NAME_LEN)
+		return 0;
+	if (len < NAME_LEN && de->name[len])
+		return 0;
+	__asm__("cld\n\t"
+		"fs ; repe ; cmpsb\n\t"
+		"setz %%al"
+		:"=a" (same)
+		:"0" (0),"S" ((long) name),"D" ((long) de->name),"c" (len)
+		);
+	return same;
+}
 
 // 从目录中查找指定的目录项，返回目录项所在的缓冲区
 static struct buffer_head * find_entry(struct m_inode ** dir,
@@ -16,10 +55,34 @@ static struct buffer_head * find_entry(struct m_inode ** dir,
 	struct dir_entry * de;
 	struct super_block * sb;
 
+#ifdef NO_TRUNCATE
+    if (namelen > NAME_LEN)
+        return NULL;
+#else
+    if (namelen > NAME_LEN)
+        namelen = NAME_LEN;
+#endif
     entries = (*dir)->i_size / (sizeof (struct dir_entry));
     *res_dir = NULL;
     if (!namelen)
         return NULL;
+
+/* check for '..', as we might have to do some "magic" for it */
+    if (namelen==2 && get_fs_byte(name)=='.' && get_fs_byte(name+1)=='.') {
+/* '..' in a pseudo-root results in a faked '.' (just change namelen) */
+        if ((*dir) == current->root)
+            namelen=1;
+        else if ((*dir)->i_num == ROOT_INO) {
+/* '..' over a mount-point results in 'dir' being exchanged for the mounted
+directory-inode. NOTE! We set mounted, so that we can iput the new dir */
+            sb=get_super((*dir)->i_dev);
+            if (sb->s_imount) {
+                iput(*dir);
+                (*dir)=sb->s_imount;
+                (*dir)->i_count++;
+            }
+        }
+    }
 
     if (!(block = (*dir)->i_zone[0]))
         return NULL;
@@ -34,10 +97,15 @@ static struct buffer_head * find_entry(struct m_inode ** dir,
         if ((char *)de >= BLOCK_SIZE+bh->b_data) {
             brelse(bh);
             bh = NULL;
+            if (!(block = bmap(*dir,i/DIR_ENTRIES_PER_BLOCK)) ||
+                !(bh = bread((*dir)->i_dev,block))) {
+                i += DIR_ENTRIES_PER_BLOCK;
+                continue;
+            }
+            de = (struct dir_entry *) bh->b_data;
         }
-
         // 通过文件名对比目录项
-        if (!strncmp(de->name, name, namelen)) {
+        if (match(namelen,name,de)) {
             *res_dir = de;
             return bh;
         }
@@ -171,7 +239,7 @@ static struct m_inode * dir_namei(const char * pathname,
 
     // 查找最后一个 / 后的名字字符串，并计算其长度
     basename = pathname;
-    while (c=pathname[0], pathname++, c)
+    while ((c=get_fs_byte(pathname++)))
         if (c=='/')
             basename=pathname;
     *namelen = pathname-basename-1;
@@ -228,11 +296,23 @@ int open_namei(const char * pathname, int flag, int mode,
     struct buffer_head * bh;
     struct dir_entry * de;
 
+    if ((flag & O_TRUNC) && !(flag & O_ACCMODE))
+        flag |= O_WRONLY;
+    mode &= 0777 & ~current->umask;
     // 添加普通文件的标志
     mode |= I_REGULAR;
     // 先取得文件所在目录，比如 /usr/root/whoami.c 要先取得 /usr/root 的 inode
     if (!(dir = dir_namei(pathname,&namelen,&basename)))
         return -ENOENT;
+
+    if (!namelen) {			/* special case: '/usr/' etc */
+        if (!(flag & (O_ACCMODE|O_CREAT|O_TRUNC))) {
+            *res_inode=dir;
+            return 0;
+        }
+        iput(dir);
+        return -EISDIR;
+    }
 
     // 先不考虑打开目录文件的情况
     bh = find_entry(&dir, basename, namelen, &de);
@@ -245,6 +325,10 @@ int open_namei(const char * pathname, int flag, int mode,
         }
 
         // todo 因为目前还没有引入用户概念，先跳过权限检测
+        if (!permission(dir,MAY_WRITE)) {
+            iput(dir);
+            return -EACCES;
+        }
 
         // 创建一个新的 inode，用于指向即将要创建的文件
         inode = new_inode(dir->i_dev);
@@ -255,12 +339,17 @@ int open_namei(const char * pathname, int flag, int mode,
         }
 
         // 设置 inode 相应的标志位，i_dirt = 1 标记 inode 需要被写入到磁盘中
-        // inode->i_uid = current->euid;
+        inode->i_uid = current->euid;
         inode->i_mode = mode;
         inode->i_dirt = 1;
         // 把新创建的 inode 添加到目录文件中，成为目录的一个目录项，这样文件就属于某一个目录了
         bh = add_entry(dir,basename,namelen,&de);
-
+        if (!bh) {
+            inode->i_nlinks--;
+            iput(inode);
+            iput(dir);
+            return -ENOSPC;
+        }
         // 因为目录文件也被更新了，所以目录文件也需要被写入到磁盘中 b_dirt = 1
         de->inode = inode->i_num;
         // 因为向目录文件中添加了目录项，被添加到 bh 中的目录项需要写入到磁盘中去
@@ -277,10 +366,16 @@ int open_namei(const char * pathname, int flag, int mode,
     dev = dir->i_dev;
     brelse(bh);
     iput(dir);
-
+    if (flag & O_EXCL)
+        return -EEXIST;
     if (!(inode=iget(dev,inr)))
         return -EACCES;
-
+    if ((S_ISDIR(inode->i_mode) && (flag & O_ACCMODE)) ||
+        !permission(inode,ACC_MODE(flag))) {
+        iput(inode);
+        return -EPERM;
+    }
+    // inode->i_atime = CURRENT_TIME;
     // 如果打开文件时设置了截断标志且是写操作就截断文件
     if (flag & O_TRUNC)
         truncate(inode);

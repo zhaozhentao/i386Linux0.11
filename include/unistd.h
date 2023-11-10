@@ -5,6 +5,7 @@
 
 #define __NR_setup	0
 #define __NR_fork	2
+#define __NR_open	5
 
 #define _syscall0(type,name) \
   type name(void) \

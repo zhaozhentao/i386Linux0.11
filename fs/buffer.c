@@ -5,6 +5,7 @@ extern int end;  // 这个变量是由编译器添加的，是 bss 段结束后�
 struct buffer_head * start_buffer = (struct buffer_head *) &end; // 取内核程序的结束地址作为内核缓冲区的起始地址
 struct buffer_head * hash_table[NR_HASH];                        // 内核使用 hash_table 管理内存，307 项
 static struct buffer_head * free_list;                           // 空闲的内存链表
+static struct task_struct * buffer_wait = NULL;
 int NR_BUFFERS = 0;                                              // 用于统计缓冲块数量
 
 static inline void wait_on_buffer(struct buffer_head * bh) {
@@ -21,6 +22,31 @@ int sys_sync(void) {
     for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
         wait_on_buffer(bh);
         if (bh->b_dirt)
+            ll_rw_block(WRITE,bh);
+    }
+    return 0;
+}
+
+int sync_dev(int dev)
+{
+    int i;
+    struct buffer_head * bh;
+
+    bh = start_buffer;
+    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
+        if (bh->b_dev != dev)
+            continue;
+        wait_on_buffer(bh);
+        if (bh->b_dev == dev && bh->b_dirt)
+            ll_rw_block(WRITE,bh);
+    }
+    sync_inodes();
+    bh = start_buffer;
+    for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
+        if (bh->b_dev != dev)
+            continue;
+        wait_on_buffer(bh);
+        if (bh->b_dev == dev && bh->b_dirt)
             ll_rw_block(WRITE,bh);
     }
     return 0;
@@ -89,7 +115,7 @@ struct buffer_head * get_hash_table(int dev, int block) {
             return NULL;
 
         bh->b_count++;
-
+        wait_on_buffer(bh);
         if (bh->b_dev == dev && bh->b_blocknr == block)
             return bh;
 
@@ -106,7 +132,9 @@ struct buffer_head * getblk(int dev,int block) {
 
     if ((bh = get_hash_table(dev,block)))
         return bh;
-
+repeat:
+    if ((bh = get_hash_table(dev,block)))
+        return bh;
     // 指向空闲链表头
     tmp = free_list;
 
@@ -123,7 +151,22 @@ struct buffer_head * getblk(int dev,int block) {
         }
     /* 遍历链表直到找到可用的 buffer_head */
     } while ((tmp = tmp->b_next_free) != free_list);
+    if (!bh) {
+        sleep_on(&buffer_wait);
+        goto repeat;
+    }
+    wait_on_buffer(bh);
+    if (bh->b_count)
+        goto repeat;
+    while (bh->b_dirt) {
+        sync_dev(bh->b_dev);
+        wait_on_buffer(bh);
+        if (bh->b_count)
+            goto repeat;
+    }
 
+    if (find_buffer(dev,block))
+        goto repeat;
     /* 找到可用的 buffer_head 后，需要设置一下引用计数
      * 同时将获取到的 buffer_head 移动到链表的末端
      */
@@ -199,10 +242,12 @@ void buffer_init(long buffer_end) {
         hash_table[i]=NULL;                           // 初始化 hash_table 全部指向 NULL
 }
 
-void brelse(struct buffer_head* bh) {
-    if (!bh)
+void brelse(struct buffer_head* buf) {
+    if (!buf)
         return;
-    if (!(bh->b_count--))
+    wait_on_buffer(buf);
+    if (!(buf->b_count--))
         panic("Trying to free free buffer");
+    wake_up(&buffer_wait);
 }
 
