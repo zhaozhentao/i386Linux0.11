@@ -10,6 +10,7 @@
 #define EEXIST                  17      // 文件已经存在
 #define EXDEV                   18      // 非法连接
 #define ENOTDIR                 20      // 不是目录文件
+#define EINVAL                  22      // 参数无效
 #define ENOSPC                  28      // 没有空间
 #define ENOSYS                  38      // 功能还没实现
 #define ENOTEMPTY               39      // 目录不为空

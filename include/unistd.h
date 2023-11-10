@@ -5,6 +5,7 @@
 
 #define __NR_setup	0   // 文件系统初始化系统调用
 #define __NR_fork	2   // fork 系统调用
+#define __NR_open	5   // open 系统调用
 
 #define _syscall0(type,name) \
   type name(void) \
