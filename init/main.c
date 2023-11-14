@@ -68,5 +68,6 @@ void init(void) {
 
     setup((void *) &drive_info);
     (void) open("/dev/tty0",O_RDWR,0);  // 读写方式打开设备 /dev/tty0
-    write(0, "hello tty0\n", 11);
+    dup(0);                             // 复制 0 号文件描述符
+    dup(0);                             // 复制 0 号文件描述符
 }
