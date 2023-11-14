@@ -6,10 +6,13 @@ static inline _syscall1(int,setup,void *,BIOS)
 
 #include <asm/system.h>
 
+#include <stdarg.h>
 #include <fcntl.h>
 
 #include <linux/fs.h>
 #include <sys/stat.h>
+
+static char printbuf[1024];
 
 #define EXT_MEM_K (*(unsigned short *)0x90002)        // 1M 以后的扩展内存大小，也是在 setup.s 中设置的
 #define DRIVE_INFO (*(struct drive_info *) 0x90080);  // 这个地址下的信息由 setup.s 设置,保存了 hd0 相关信息
@@ -63,6 +66,17 @@ void main(void) {
     for (;;);
 }
 
+static int printf(const char *fmt, ...)
+{
+    va_list args;
+    int i;
+
+    va_start(args, fmt);
+    write(1,printbuf,i=vsprintf(printbuf, fmt, args));
+    va_end(args);
+    return i;
+}
+
 void init(void) {
     int pid,i;
 
@@ -70,4 +84,5 @@ void init(void) {
     (void) open("/dev/tty0",O_RDWR,0);  // 读写方式打开设备 /dev/tty0
     dup(0);                             // 复制 0 号文件描述符
     dup(0);                             // 复制 0 号文件描述符
+    printf("hello printf\n");
 }
