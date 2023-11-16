@@ -84,5 +84,11 @@ void init(void) {
     (void) open("/dev/tty0",O_RDWR,0);  // 读写方式打开设备 /dev/tty0
     dup(0);                             // 复制 0 号文件描述符
     dup(0);                             // 复制 0 号文件描述符
-    printf("hello printf\n");
+    printf("%d buffers = %d bytes buffer space\n\r",NR_BUFFERS,
+        NR_BUFFERS*BLOCK_SIZE);
+    printf("Free mem: %d bytes\n\r",memory_end-main_memory_start);
+    if (!(pid=fork())) {
+        close(0);
+    }
+
 }

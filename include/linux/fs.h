@@ -136,6 +136,7 @@ struct dir_entry {
 
 extern struct file file_table[NR_FILE];
 extern struct super_block super_block[NR_SUPER];
+extern int nr_buffers;
 
 extern struct buffer_head * bread(int dev,int block);
 extern int ROOT_DEV;
