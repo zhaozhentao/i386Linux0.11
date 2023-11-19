@@ -77,6 +77,9 @@ static int printf(const char *fmt, ...)
     return i;
 }
 
+static char * argv_rc[] = { "/bin/sh", NULL };
+static char * envp_rc[] = { "HOME=/", NULL };
+
 void init(void) {
     int pid,i;
 
@@ -89,6 +92,6 @@ void init(void) {
     printf("Free mem: %d bytes\n\r",memory_end-main_memory_start);
     if (!(pid=fork())) {
         close(0);
+        execve("/bin/sh",argv_rc,envp_rc);
     }
-
 }

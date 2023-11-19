@@ -1,5 +1,6 @@
-.global system_call, sys_fork, timer_interrupt, hd_interrupt
+.global system_call, sys_fork, timer_interrupt, sys_execve, hd_interrupt
 
+EIP		= 0x1C
 CS      = 0x20
 
 state   = 0		# these are offsets into the task-struct.
@@ -71,6 +72,14 @@ timer_interrupt:
   call do_timer                   # 调用 c 实现的中断处理函数
   addl $4,%esp                    # 将前面 pushl %eax 压入栈的参数出栈
   jmp ret_from_sys_call
+
+.align 2
+sys_execve:
+  lea EIP(%esp),%eax
+  pushl %eax
+  call do_execve
+  addl $4,%esp
+  ret
 
 .align 2
 sys_fork:

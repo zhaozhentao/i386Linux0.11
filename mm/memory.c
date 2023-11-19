@@ -150,6 +150,30 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
     return 0;
 }
 
+unsigned long put_page(unsigned long page,unsigned long address)
+{
+	unsigned long tmp, *page_table;
+
+/* NOTE !!! This uses the fact that _pg_dir=0 */
+
+	if (page < LOW_MEM || page >= HIGH_MEMORY)
+		printk("Trying to put page %p at %p\n",page,address);
+	if (mem_map[(page-LOW_MEM)>>12] != 1)
+		printk("mem_map disagrees with %p at %p\n",page,address);
+	page_table = (unsigned long *) ((address>>20) & 0xffc);
+	if ((*page_table)&1)
+		page_table = (unsigned long *) (0xfffff000 & *page_table);
+	else {
+		if (!(tmp=get_free_page()))
+			return 0;
+		*page_table = tmp|7;
+		page_table = (unsigned long *) tmp;
+	}
+	page_table[(address>>12) & 0x3ff] = page | 7;
+/* no need for invalidate */
+	return page;
+}
+
 // 分配一页新的内存，使触发写保护中断的线性地址指向新分配的空间
 void un_wp_page(unsigned long * table_entry) {
     unsigned long old_page,new_page;

@@ -3,6 +3,7 @@ extern int sys_fork();
 extern int sys_write();
 extern int sys_open();
 extern int sys_close();
+extern int sys_execve();
 extern int sys_dup();
 
 fn_ptr sys_call_table[] = {
@@ -17,7 +18,7 @@ fn_ptr sys_call_table[] = {
     0,
     0,
     0,
-    0,
+    sys_execve,
     0,
     0,
     0,

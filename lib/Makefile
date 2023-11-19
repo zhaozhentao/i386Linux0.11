@@ -9,7 +9,8 @@ CFLAGS	+= -I../include
 .c.o:
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = ctype.o open.o close.o errno.o write.o dup.o string.o
+OBJS  = ctype.o open.o close.o errno.o write.o dup.o string.o \
+		execve.o
 
 lib.a: $(OBJS)
 	$(AR) rcs lib.a $(OBJS)
@@ -26,6 +27,8 @@ open.s open.o : open.c
 dup.s dup.o : dup.c
 
 errno.s errno.o : errno.c
+
+execve.s execve.o : execve.c
 
 write.s write.o : write.c
 

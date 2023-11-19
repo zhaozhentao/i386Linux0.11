@@ -21,6 +21,8 @@ struct stat {
 #define S_IFREG  0100000     // 常规文件
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
+#define S_ISUID  0004000     // 执行时设置用户 id
+#define S_ISGID  0002000     // 执行时设置组 id
 
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)   // 测试是否常规文件
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
