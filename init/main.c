@@ -1,10 +1,12 @@
 #define __LIBRARY__
 #include <unistd.h>
+#include <time.h>
 
 static inline _syscall0(int,fork)
 static inline _syscall1(int,setup,void *,BIOS)
 
 #include <asm/system.h>
+#include <asm/io.h>
 
 #include <stdarg.h>
 #include <fcntl.h>
@@ -14,9 +16,40 @@ static inline _syscall1(int,setup,void *,BIOS)
 
 static char printbuf[1024];
 
+extern long startup_time;
+
 #define EXT_MEM_K (*(unsigned short *)0x90002)        // 1M 以后的扩展内存大小，也是在 setup.s 中设置的
 #define DRIVE_INFO (*(struct drive_info *) 0x90080);  // 这个地址下的信息由 setup.s 设置,保存了 hd0 相关信息
 #define ORIG_ROOT_DEV (*(unsigned short *)0x901FC)    // 根文件系统所在设备号
+
+#define CMOS_READ(addr) ({ \
+outb_p(0x80|addr,0x70); \
+inb_p(0x71); \
+})
+
+#define BCD_TO_BIN(val) ((val)=((val)&15) + ((val)>>4)*10)
+
+static void time_init(void)
+{
+    struct tm time;
+
+    do {
+        time.tm_sec = CMOS_READ(0);
+        time.tm_min = CMOS_READ(2);
+        time.tm_hour = CMOS_READ(4);
+        time.tm_mday = CMOS_READ(7);
+        time.tm_mon = CMOS_READ(8);
+        time.tm_year = CMOS_READ(9);
+    } while (time.tm_sec != CMOS_READ(0));
+    BCD_TO_BIN(time.tm_sec);
+    BCD_TO_BIN(time.tm_min);
+    BCD_TO_BIN(time.tm_hour);
+    BCD_TO_BIN(time.tm_mday);
+    BCD_TO_BIN(time.tm_mon);
+    BCD_TO_BIN(time.tm_year);
+    time.tm_mon--;
+    startup_time = kernel_mktime(&time);
+}
 
 struct drive_info { char dummy[32]; } drive_info;
 
@@ -50,6 +83,7 @@ void main(void) {
     con_init();
     trap_init();
     blk_dev_init();                                 // 初始化块设备结构
+    time_init();
     sched_init();
     buffer_init(buffer_memory_end);
     hd_init();
