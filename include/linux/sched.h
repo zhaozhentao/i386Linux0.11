@@ -132,6 +132,9 @@ extern struct task_struct *task[NR_TASKS];
 extern struct task_struct *last_task_used_math;
 extern struct task_struct *current;
 extern long volatile jiffies;
+extern long startup_time;
+
+#define CURRENT_TIME (startup_time+jiffies/HZ)
 
 #define FIRST_TSS_ENTRY 4
 #define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)

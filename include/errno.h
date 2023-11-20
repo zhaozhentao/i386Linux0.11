@@ -12,6 +12,7 @@
 #define EXDEV                   18      // 非法连接
 #define ENODEV                  19      // 找不到对应的设备
 #define ENOTDIR                 20      // 不是目录文件
+#define EISDIR                  21      // 是目录文件
 #define EINVAL                  22      // 参数无效
 #define EMFILE                  24      // 打开文件数过多
 #define ENOSPC                  28      // 没有空间

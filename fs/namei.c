@@ -1,4 +1,5 @@
 #include <linux/sched.h>
+#include <linux/kernel.h>
 
 #include <fcntl.h>
 #include <errno.h>
@@ -6,6 +7,26 @@
 #include <sys/stat.h>
 
 extern struct m_inode * root;
+
+#define ACC_MODE(x) ("\004\002\006\377"[(x)&O_ACCMODE])
+
+#define MAY_WRITE 2
+
+// 检查有没有权限访问一个文件
+static int permission(struct m_inode * inode,int mask)
+{
+    int mode = inode->i_mode;
+
+    if (inode->i_dev && !inode->i_nlinks)
+        return 0;
+    else if (current->euid==inode->i_uid)
+        mode >>= 6;
+    else if (current->egid==inode->i_gid)
+        mode >>= 3;
+    if (((mode & mask & 0007) == mask) || suser())
+        return 1;
+    return 0;
+}
 
 // 从目录中查找指定的目录项，返回目录项所在的缓冲区
 static struct buffer_head * find_entry(struct m_inode ** dir,
@@ -228,11 +249,28 @@ int open_namei(const char * pathname, int flag, int mode,
     struct buffer_head * bh;
     struct dir_entry * de;
 
+    // 如果访问模式是只读，但是设置了截断位，则添加只读标志 O_WRONLY
+    if ((flag & O_TRUNC) && !(flag & O_ACCMODE))
+        flag |= O_WRONLY;
+    // 使用当前进程的掩码屏蔽访问的模式相应位
+    mode &= 0777 & ~current->umask;
     // 添加普通文件的标志
     mode |= I_REGULAR;
     // 先取得文件所在目录，比如 /usr/root/whoami.c 要先取得 /usr/root 的 inode
     if (!(dir = dir_namei(pathname,&namelen,&basename)))
         return -ENOENT;
+
+    // 如果打开比如 /usr/ 这种路径，表示正在访问一个目录文件
+    if (!namelen) {
+        // 如果不是读写，创建，截断操作，就返回目录文件的 inode
+        if (!(flag & (O_ACCMODE|O_CREAT|O_TRUNC))) {
+            *res_inode=dir;
+            return 0;
+        }
+        // 否则就是对目录文件的非法操作
+        iput(dir);
+        return -EISDIR;
+    }
 
     // 先不考虑打开目录文件的情况
     bh = find_entry(&dir, basename, namelen, &de);
@@ -244,7 +282,11 @@ int open_namei(const char * pathname, int flag, int mode,
             return -ENOENT;
         }
 
-        // todo 因为目前还没有引入用户概念，先跳过权限检测
+        // 检查有没有权限访问
+        if (!permission(dir,MAY_WRITE)) {
+            iput(dir);
+            return -EACCES;
+        }
 
         // 创建一个新的 inode，用于指向即将要创建的文件
         inode = new_inode(dir->i_dev);
@@ -255,12 +297,18 @@ int open_namei(const char * pathname, int flag, int mode,
         }
 
         // 设置 inode 相应的标志位，i_dirt = 1 标记 inode 需要被写入到磁盘中
-        // inode->i_uid = current->euid;
+        inode->i_uid = current->euid;
         inode->i_mode = mode;
         inode->i_dirt = 1;
         // 把新创建的 inode 添加到目录文件中，成为目录的一个目录项，这样文件就属于某一个目录了
         bh = add_entry(dir,basename,namelen,&de);
-
+        // 添加目录项失败，释放 inode
+        if (!bh) {
+            inode->i_nlinks--;
+            iput(inode);
+            iput(dir);
+            return -ENOSPC;
+        }
         // 因为目录文件也被更新了，所以目录文件也需要被写入到磁盘中 b_dirt = 1
         de->inode = inode->i_num;
         // 因为向目录文件中添加了目录项，被添加到 bh 中的目录项需要写入到磁盘中去
@@ -277,10 +325,21 @@ int open_namei(const char * pathname, int flag, int mode,
     dev = dir->i_dev;
     brelse(bh);
     iput(dir);
+    // 文件已经存在，flag 设置了独占文件标志位，返回文件已经存在
+    if (flag & O_EXCL)
+        return -EEXIST;
 
     if (!(inode=iget(dev,inr)))
         return -EACCES;
 
+    // 如果打开的是一个目录节点，并且只写，读写，或者没有访问权限，释放 inode 并返回
+    if ((S_ISDIR(inode->i_mode) && (flag & O_ACCMODE)) ||
+        !permission(inode,ACC_MODE(flag))) {
+        iput(inode);
+        return -EPERM;
+    }
+
+    inode->i_atime = CURRENT_TIME;
     // 如果打开文件时设置了截断标志且是写操作就截断文件
     if (flag & O_TRUNC)
         truncate(inode);
