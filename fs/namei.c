@@ -1,15 +1,15 @@
 #include <linux/sched.h>
 #include <linux/kernel.h>
+#include <asm/segment.h>
 
 #include <fcntl.h>
 #include <errno.h>
 #include <const.h>
 #include <sys/stat.h>
 
-extern struct m_inode * root;
-
 #define ACC_MODE(x) ("\004\002\006\377"[(x)&O_ACCMODE])
 
+#define MAY_EXEC 1
 #define MAY_WRITE 2
 
 // 检查有没有权限访问一个文件
@@ -148,19 +148,28 @@ static struct m_inode * get_dir(const char * pathname) {
     int namelen, inr, idev;
     struct dir_entry * de;
 
-    // 从根 inode 开始遍历
-    inode = iget(ROOT_DEV,ROOT_INO);
-    pathname++;
+    if (!current->root || !current->root->i_count)
+        panic("No root inode");
+    if (!current->pwd || !current->pwd->i_count)
+        panic("No cwd inode");
+    if ((c=get_fs_byte(pathname))=='/') {
+        inode = current->root;
+        pathname++;
+    } else if (c)
+        inode = current->pwd;
+    else
+        return NULL;
 
+    inode->i_count++;
     while(1) {
         thisname = pathname;
-        // todo 先跳过安全检测
-        if (!S_ISDIR(inode->i_mode)) {
+
+        if (!S_ISDIR(inode->i_mode) || !permission(inode,MAY_EXEC)) {
             iput(inode);
             return NULL;
         }
         // 通过指针扫描路径，遇到路径分隔符 / 就停止
-        for(namelen=0;(c=pathname[0], pathname++, c)&&(c!='/');namelen++)
+        for(namelen=0;(c=get_fs_byte(pathname++))&&(c!='/');namelen++)
             /* nothing */ ;
         if (!c)
             return inode;
@@ -192,7 +201,7 @@ static struct m_inode * dir_namei(const char * pathname,
 
     // 查找最后一个 / 后的名字字符串，并计算其长度
     basename = pathname;
-    while (c=pathname[0], pathname++, c)
+    while ((c=get_fs_byte(pathname++)))
         if (c=='/')
             basename=pathname;
     *namelen = pathname-basename-1;

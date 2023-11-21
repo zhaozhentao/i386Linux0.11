@@ -1,4 +1,5 @@
 #include <linux/fs.h>
+#include <linux/sched.h>
 
 // 测试指定位的 0 1 值，并返回该比特位值
 #define set_bit(bitnr,addr) ({ \
@@ -112,8 +113,6 @@ static struct super_block * read_super(int dev) {
     return s;
 }
 
-struct m_inode * root;
-
 void mount_root(void) {
     int i,free;
     struct super_block * p;
@@ -132,15 +131,18 @@ void mount_root(void) {
     for(p = &super_block[0] ; p < &super_block[NR_SUPER] ; p++) {
         p->s_dev = 0;
         p->s_lock = 0;
-        //p->s_wait = NULL;
+        p->s_wait = NULL;
     }
     // 从磁盘读取超级块
     if (!(p=read_super(ROOT_DEV)))
         panic("Unable to mount root");
     if (!(mi=iget(ROOT_DEV,ROOT_INO)))
         panic("Unable to read root i-node");
-    // todo: 目前还没有实现进程相关，先用 root 保存根节点
-    root = mi;
+    // inode 被引用了 4 次
+    mi->i_count += 3 ;
+    p->s_isup = p->s_imount = mi;
+    current->pwd = mi;
+    current->root = mi;
     // 下面开始读取位图中的每一位，看看有多少空闲块
     free=0;
     i=p->s_nzones;

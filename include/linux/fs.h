@@ -110,7 +110,7 @@ struct super_block {
     struct m_inode * s_imount;         // 被安装到的 i 节点
     unsigned long s_time;              // 修改时间
     // 暂时未接触到进程相关内容
-    // struct task_struct * s_wait;
+    struct task_struct * s_wait;
     unsigned char s_lock;              // 锁定标志
     unsigned char s_rd_only;           // 只读标志
     unsigned char s_dirt;              // 脏标志(是否被修改过)
