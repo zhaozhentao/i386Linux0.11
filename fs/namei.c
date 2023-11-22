@@ -165,11 +165,11 @@ static struct buffer_head * add_entry(struct m_inode * dir,
             // 追加在目录项数组的最后,所以长度要增加
             dir->i_size = (i+1)*sizeof(struct dir_entry);
             dir->i_dirt = 1;
-            // dir->i_ctime = CURRENT_TIME;
+            dir->i_ctime = CURRENT_TIME;
         }
         // 找到一个空的目录项
         if (!de->inode) {
-            //dir->i_mtime = CURRENT_TIME;
+            dir->i_mtime = CURRENT_TIME;
             // 把文件名复制到这个目录项
             for (i=0; i < NAME_LEN ; i++)
                 de->name[i]=(i<namelen)?name[i]:0;
@@ -289,7 +289,7 @@ struct m_inode * namei(const char * pathname) {
     dir=iget(dev,inr);
     // todo 更新 inode 最后访问时间
     if (dir) {
-        // dir->i_atime=CURRENT_TIME;
+        dir->i_atime=CURRENT_TIME;
         dir->i_dirt=1;
     }
     return dir;
@@ -413,10 +413,17 @@ int sys_mkdir(const char * pathname, int mode) {
     struct buffer_head * bh, *dir_block;
     struct dir_entry * de;
 
-    // todo permission check
+    if (!suser())
+        return -EPERM;
+
     // 检查参数的有效性，取出需要被创建目录的父目录
     if (!(dir = dir_namei(pathname,&namelen,&basename)))
         return -ENOENT;
+
+    if (!permission(dir,MAY_WRITE)) {
+        iput(dir);
+        return -EPERM;
+    }
 
     // 如果 namelen 为 0 说明没有指定需要被创建的目录名，释放资源并返回
     if (!namelen) {
@@ -440,7 +447,7 @@ int sys_mkdir(const char * pathname, int mode) {
     // 设置 inode 对应的文件长度为 32 (两个目录项的大小，即 . 和 .. 目录项)
     inode->i_size = 32;
     inode->i_dirt = 1;
-    // inode->i_mtime = inode->i_atime = CURRENT_TIME;
+    inode->i_mtime = inode->i_atime = CURRENT_TIME;
     // 为 inode 分配保存目录项的磁盘块，第一个直接块指向这个数据块
     if (!(inode->i_zone[0]=new_block(inode->i_dev))) {
         iput(dir);
@@ -468,10 +475,9 @@ int sys_mkdir(const char * pathname, int mode) {
     inode->i_nlinks = 2;
     dir_block->b_dirt = 1;
     brelse(dir_block);
-    // inode->i_mode = I_DIRECTORY | (mode & 0777 & ~current->umask);
     // 设置目录文件的属性，包括文件类型(目录) 和访问权限控制位(定义在 include/sys/stat.h)
     // 其中可执行位控制了是否能 cd 到这个目录的权限
-    inode->i_mode = I_DIRECTORY | mode & 0777;
+    inode->i_mode = I_DIRECTORY | (mode & 0777 & ~current->umask);
     inode->i_dirt = 1;
     // 添加刚刚创建的这个目录文件到其父目录文件中
     bh = add_entry(dir,basename,namelen,&de);
@@ -555,6 +561,9 @@ int sys_rmdir(const char * name) {
     struct buffer_head * bh;
     struct dir_entry * de;
 
+    if (!suser())
+        return -EPERM;
+
     // 检查被删除目录的父目录是否存在
     if (!(dir = dir_namei(name,&namelen,&basename)))
         return -ENOENT;
@@ -562,6 +571,11 @@ int sys_rmdir(const char * name) {
     if (!namelen) {
         iput(dir);
         return -ENOENT;
+    }
+
+    if (!permission(dir,MAY_WRITE)) {
+        iput(dir);
+        return -EPERM;
     }
 
     // 从父目录中找出要删除的目录项
@@ -579,6 +593,14 @@ int sys_rmdir(const char * name) {
     }
 
     // 检查 inode 是否能够被删除，引用计数如果大于 1 说明有符号连接，不能删除
+    if ((dir->i_mode & S_ISVTX) && current->euid &&
+	    inode->i_uid != current->euid) {
+        iput(dir);
+        iput(inode);
+        brelse(bh);
+        return -EPERM;
+    }
+
     if (inode->i_dev != dir->i_dev || inode->i_count>1) {
         iput(dir);
         iput(inode);
@@ -619,7 +641,7 @@ int sys_rmdir(const char * name) {
     inode->i_dirt=1;
     // 减少父目录链接数
     dir->i_nlinks--;
-    // dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+    dir->i_ctime = dir->i_mtime = CURRENT_TIME;
     dir->i_dirt=1;
     iput(dir);
     iput(inode);
@@ -644,6 +666,10 @@ int sys_unlink(const char * name) {
     }
 
     // todo permission check
+    if (!permission(dir,MAY_WRITE)) {
+        iput(dir);
+        return -EPERM;
+    }
 
     // 查找目录项，返回目录项所在的缓冲区块 buffer_head
     bh = find_entry(&dir,basename,namelen,&de);
@@ -659,6 +685,14 @@ int sys_unlink(const char * name) {
     }
 
     // todo permission check
+    if ((dir->i_mode & S_ISVTX) && !suser() &&
+        current->euid != inode->i_uid &&
+        current->euid != dir->i_uid) {
+        iput(dir);
+        iput(inode);
+        brelse(bh);
+        return -EPERM;
+    }
 
     // unlink 只能删除文件，不能删除目录，如果是目录返回
     if (S_ISDIR(inode->i_mode)) {
@@ -680,7 +714,7 @@ int sys_unlink(const char * name) {
     // 当 i_nlinks 为 0 时，表示文件被删除了
     inode->i_nlinks--;
     inode->i_dirt = 1;
-    // inode->i_ctime = CURRENT_TIME;
+    inode->i_ctime = CURRENT_TIME;
     iput(inode);
     iput(dir);
     return 0;
@@ -720,11 +754,11 @@ int sys_link(const char * oldname, const char * newname) {
         iput(oldinode);
         return -EXDEV;
     }
-    //if (!permission(dir,MAY_WRITE)) {
-    //    iput(dir);
-    //    iput(oldinode);
-    //    return -EACCES;
-    //}
+    if (!permission(dir,MAY_WRITE)) {
+        iput(dir);
+        iput(oldinode);
+        return -EACCES;
+    }
     // 检查新路径是否已经存在，如果已经存在不能创建
     bh = find_entry(&dir,basename,namelen,&de);
     if (bh) {
@@ -747,7 +781,7 @@ int sys_link(const char * oldname, const char * newname) {
     iput(dir);
     // inode 引用计数增加
     oldinode->i_nlinks++;
-    // oldinode->i_ctime = CURRENT_TIME;
+    oldinode->i_ctime = CURRENT_TIME;
     oldinode->i_dirt = 1;
     iput(oldinode);
     return 0;
