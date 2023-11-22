@@ -19,6 +19,7 @@ struct stat {
 
 #define S_IFMT  00170000
 #define S_IFREG  0100000     // 常规文件
+#define S_IFBLK  0060000     // 块设备文件
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
 #define S_ISVTX  0001000     // 目录的受限删除标志
@@ -26,6 +27,7 @@ struct stat {
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)   // 测试是否常规文件
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)   // 测试是否字符设备
+#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)   // 是否块设备
 
 #define S_IRWXU 00700
 #define S_IRUSR 00400

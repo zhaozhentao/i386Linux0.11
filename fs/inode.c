@@ -1,4 +1,5 @@
 #include <linux/fs.h>
+#include <sys/stat.h>
 
 // 内存中的 i 节点表
 struct m_inode inode_table[NR_INODE]={{0,},};
@@ -176,9 +177,24 @@ void iput(struct m_inode * inode) {
         inode->i_count--;
         return;
     }
+    if (S_ISBLK(inode->i_mode)) {
+        sync_dev(inode->i_zone[0]);
+        wait_on_inode(inode);
+    }
+repeat:
     if (inode->i_count>1) {
         inode->i_count--;
         return;
+    }
+    if (!inode->i_nlinks) {
+        truncate(inode);
+        free_inode(inode);
+        return;
+    }
+    if (inode->i_dirt) {
+        write_inode(inode);	/* we can sleep - so do again */
+        wait_on_inode(inode);
+        goto repeat;
     }
     inode->i_count--;
     return;
