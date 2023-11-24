@@ -1,4 +1,5 @@
 #include <linux/sched.h>
+#include <asm/system.h>
 
 extern int end;  // 这个变量是由编译器添加的，是 bss 段结束后的第一个地址，表示内核程序的结束边界
 
@@ -8,7 +9,10 @@ static struct buffer_head * free_list;                           // 空闲的内
 int NR_BUFFERS = 0;                                              // 用于统计缓冲块数量
 
 static inline void wait_on_buffer(struct buffer_head * bh) {
-    while (bh->b_lock);
+    cli();
+    while (bh->b_lock)
+        sleep_on(&bh->b_wait);
+    sti();
 }
 
 // 同步设备和内存缓冲区的数据，把内存中的数据写入到磁盘中

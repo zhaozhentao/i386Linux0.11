@@ -43,6 +43,7 @@ struct buffer_head {
     unsigned char b_dirt;              // 缓冲区是否更新过, 0 没有 1 有更新 (例如需要同步到硬盘)
     unsigned char b_count;             // 缓冲区的引用计数
     unsigned char b_lock;              // 缓冲区是否被锁 0 没有 1 被锁了
+    struct task_struct * b_wait;
     struct buffer_head * b_prev;       // 前一个缓冲区头
     struct buffer_head * b_next;       // 下一个缓冲区头
     struct buffer_head * b_prev_free;  // 前一个空闲的缓冲区头
