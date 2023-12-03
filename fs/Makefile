@@ -11,7 +11,7 @@ CFLAGS += -I../include
 	$(AS) -o $*.o $<
 
 OBJS = open.o read_write.o inode.o file_table.o buffer.o super.o namei.o \
-	   char_dev.o file_dev.o stat.o bitmap.o fcntl.o truncate.o
+	   char_dev.o file_dev.o stat.o exec.o bitmap.o fcntl.o truncate.o
 
 fs.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o fs.o $(OBJS)

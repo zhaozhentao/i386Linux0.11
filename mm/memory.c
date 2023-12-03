@@ -1,3 +1,5 @@
+#include <linux/sched.h>
+
 static inline void oom(void) {
     // todo oom
     printk("out of memory\n\r");
@@ -150,6 +152,30 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
     return 0;
 }
 
+unsigned long put_page(unsigned long page,unsigned long address)
+{
+	unsigned long tmp, *page_table;
+
+/* NOTE !!! This uses the fact that _pg_dir=0 */
+
+	if (page < LOW_MEM || page >= HIGH_MEMORY)
+		printk("Trying to put page %p at %p\n",page,address);
+	if (mem_map[(page-LOW_MEM)>>12] != 1)
+		printk("mem_map disagrees with %p at %p\n",page,address);
+	page_table = (unsigned long *) ((address>>20) & 0xffc);
+	if ((*page_table)&1)
+		page_table = (unsigned long *) (0xfffff000 & *page_table);
+	else {
+		if (!(tmp=get_free_page()))
+			return 0;
+		*page_table = tmp|7;
+		page_table = (unsigned long *) tmp;
+	}
+	page_table[(address>>12) & 0x3ff] = page | 7;
+/* no need for invalidate */
+	return page;
+}
+
 // 分配一页新的内存，使触发写保护中断的线性地址指向新分配的空间
 void un_wp_page(unsigned long * table_entry) {
     unsigned long old_page,new_page;
@@ -189,8 +215,120 @@ void do_wp_page(unsigned long error_code,unsigned long address) {
         *((unsigned long *) ((address>>20) &0xffc)))));
 }
 
-void do_no_page(unsigned long error_code,unsigned long address) {
+void get_empty_page(unsigned long address)
+{
+    unsigned long tmp;
 
+    if (!(tmp=get_free_page()) || !put_page(tmp,address)) {
+        free_page(tmp);		/* 0 is ok - ignored */
+        oom();
+    }
+}
+
+static int try_to_share(unsigned long address, struct task_struct * p)
+{
+    unsigned long from;
+    unsigned long to;
+    unsigned long from_page;
+    unsigned long to_page;
+    unsigned long phys_addr;
+
+    from_page = to_page = ((address>>20) & 0xffc);
+    from_page += ((p->start_code>>20) & 0xffc);
+    to_page += ((current->start_code>>20) & 0xffc);
+    /* is there a page-directory at from? */
+    from = *(unsigned long *) from_page;
+    if (!(from & 1))
+        return 0;
+    from &= 0xfffff000;
+    from_page = from + ((address>>10) & 0xffc);
+    phys_addr = *(unsigned long *) from_page;
+    /* is the page clean and present? */
+    if ((phys_addr & 0x41) != 0x01)
+        return 0;
+    phys_addr &= 0xfffff000;
+    if (phys_addr >= HIGH_MEMORY || phys_addr < LOW_MEM)
+        return 0;
+    to = *(unsigned long *) to_page;
+    if (!(to & 1)) {
+        if ((to = get_free_page()))
+            *(unsigned long *) to_page = to | 7;
+        else
+            oom();
+    }
+    to &= 0xfffff000;
+    to_page = to + ((address>>10) & 0xffc);
+    if (1 & *(unsigned long *) to_page)
+        panic("try_to_share: to_page already exists");
+    /* share them: write-protect */
+    *(unsigned long *) from_page &= ~2;
+    *(unsigned long *) to_page = *(unsigned long *) from_page;
+    invalidate();
+    phys_addr -= LOW_MEM;
+    phys_addr >>= 12;
+    mem_map[phys_addr]++;
+    return 1;
+}
+
+static int share_page(unsigned long address)
+{
+    struct task_struct ** p;
+
+    if (!current->executable)
+        return 0;
+    if (current->executable->i_count < 2)
+        return 0;
+    for (p = &LAST_TASK ; p > &FIRST_TASK ; --p) {
+        if (!*p)
+            continue;
+        if (current == *p)
+            continue;
+        if ((*p)->executable != current->executable)
+            continue;
+        if (try_to_share(address,*p))
+            return 1;
+    }
+    return 0;
+}
+
+// 缺页处理
+void do_no_page(unsigned long error_code,unsigned long address) {
+    int nr[4];
+    unsigned long tmp;
+    unsigned long page;
+    int block,i;
+
+    // 缺页所在页
+    address &= 0xfffff000;
+    // 减去进程 start_code 可得出对应的逻辑地址
+    tmp = address - current->start_code;
+    // tmp >= current->end_data 表明进程要在新申请的内存放数据，直接申请新的空闲页面
+    if (!current->executable || tmp >= current->end_data) {
+        get_empty_page(address);
+        return;
+    }
+
+    // 说明所缺页面在进程执行影像文件范围内，尝试共享页面，如果共享不成功申请一页新内存并将执行文件的内容读到该页内存
+    if (share_page(tmp))
+        return;
+
+    if (!(page = get_free_page()))
+        oom();
+
+    block = 1 + tmp/BLOCK_SIZE;
+    for (i=0 ; i<4 ; block++,i++)
+        nr[i] = bmap(current->executable,block);
+    bread_page(page,current->executable->i_dev,nr);
+    i = tmp + 4096 - current->end_data;
+    tmp = page + 4096;
+    while (i-- > 0) {
+        tmp--;
+        *(char *)tmp = 0;
+    }
+    if (put_page(page,address))
+        return;
+    free_page(page);
+    oom();
 }
 
 void mem_init(long start_mem, long end_mem)

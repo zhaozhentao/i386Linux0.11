@@ -10,6 +10,7 @@
 #define __NR_write	4   // write 系统调用
 #define __NR_open	5   // open 系统调用
 #define __NR_close  6
+#define __NR_execve 11
 #define __NR_dup    41  // dup 系统调用
 
 #define _syscall0(type,name) \

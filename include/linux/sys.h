@@ -8,6 +8,7 @@ extern int sys_unlink();
 extern int sys_utime();
 extern int sys_mkdir();
 extern int sys_rmdir();
+extern int sys_execve();
 extern int sys_dup();
 extern int sys_ustat();
 
@@ -25,7 +26,7 @@ fn_ptr sys_call_table[] = {
     sys_unlink,
     0,
     0,
-    0,
+    sys_execve,
     0,
     0,
     0,
