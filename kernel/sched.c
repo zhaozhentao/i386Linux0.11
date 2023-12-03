@@ -80,6 +80,14 @@ void sleep_on(struct task_struct **p)
         tmp->state=0;
 }
 
+void wake_up(struct task_struct **p)
+{
+    if (p && *p) {
+        (**p).state=0;
+        *p=NULL;
+    }
+}
+
 void do_timer(long cpl) {
     // 如果进程时间片还没用完，返回，否则置任务运行计数为0
     if ((--current->counter)>0) return;

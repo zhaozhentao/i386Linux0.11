@@ -17,6 +17,7 @@ struct request {
     unsigned long sector;               // 请求的起始扇区 1块=2扇区
     unsigned long nr_sectors;           // 请求的扇区数
     char * buffer;                      // 读或写操作的缓冲区
+    struct task_struct * waiting;
     struct buffer_head * bh;            // request 指向的缓冲区头
     struct request * next;              // 下一个请求
 };
@@ -33,6 +34,7 @@ struct blk_dev_struct {
 
 extern struct blk_dev_struct blk_dev[NR_BLK_DEV];
 extern struct request request[NR_REQUEST];
+extern struct task_struct * wait_for_request;
 
 #ifdef MAJOR_NR
 
@@ -54,9 +56,10 @@ void (*DEVICE_INTR)(void) = NULL;
 #endif /* #ifdef DEVICE_INTR */
 
 static inline void unlock_buffer(struct buffer_head * bh) {
-	if (!bh->b_lock)
-		printk(DEVICE_NAME ": free buffer being unlocked\n");
-	bh->b_lock=0;
+    if (!bh->b_lock)
+        printk(DEVICE_NAME ": free buffer being unlocked\n");
+    bh->b_lock=0;
+    wake_up(&bh->b_wait);
 }
 
 static inline void end_request(int uptodate)
@@ -71,6 +74,8 @@ static inline void end_request(int uptodate)
 		printk("dev %04x, block %d\n\r",CURRENT->dev,
 			CURRENT->bh->b_blocknr);
 	}
+	wake_up(&CURRENT->waiting);
+	wake_up(&wait_for_request);
 	CURRENT->dev = -1;
 	CURRENT = CURRENT->next;
 }
