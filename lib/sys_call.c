@@ -21,10 +21,6 @@ int sys_chdir() {
     printk("sys_chdir\n");
 }
 
-int sys_time() {
-    printk("sys_time\n");
-}
-
 int sys_mknod() {
     printk("sys_mknod\n");
 }
@@ -122,9 +118,6 @@ int sys_times() {
 
 int sys_prof() {
     printk("sys_prof\n");
-}
-int sys_brk() {
-    printk("sys_brk\n");
 }
 
 int sys_setgid() {

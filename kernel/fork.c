@@ -5,6 +5,21 @@
 
 long last_pid=0;
 
+void verify_area(void * addr,int size)
+{
+    unsigned long start;
+    
+    start = (unsigned long) addr;
+    size += start & 0xfff;
+    start &= 0xfffff000;
+    start += get_base(current->ldt[2]);
+    while (size>0) {
+        size -= 4096;
+        write_verify(start);
+        start += 4096;
+    }
+}
+
 // 复制内存页表
 // 为新任务复制代码和数据段段基址，段限长
 int copy_mem(int nr,struct task_struct * p)
