@@ -10,7 +10,7 @@ CFLAGS	+= -I../include
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
 OBJS  = ctype.o open.o close.o errno.o write.o dup.o string.o \
-		execve.o
+		execve.o sys_call.o
 
 lib.a: $(OBJS)
 	$(AR) rcs lib.a $(OBJS)
@@ -31,6 +31,8 @@ errno.s errno.o : errno.c
 execve.s execve.o : execve.c
 
 write.s write.o : write.c
+
+sys_call.o : sys_call.c
 
 clean:
 	rm -rf *.o *.a
