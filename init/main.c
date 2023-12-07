@@ -86,7 +86,7 @@ void main(void) {
     trap_init();
     blk_dev_init();                                 // 初始化块设备结构
     chr_dev_init();
-    con_init();
+    tty_init();
     time_init();
     sched_init();
     buffer_init(buffer_memory_end);
@@ -97,7 +97,8 @@ void main(void) {
 
     if (!fork()) {
         // fork 返回值 > 0 ，运行子进程代码
-        init();
+        while(1);
+        // init();
     }
 
     // 父进程代码

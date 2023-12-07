@@ -14,7 +14,9 @@ extern unsigned char _ctype[];
 extern char _ctmp;
 
 #define islower(c) ((_ctype+1)[c]&(_L))
+#define isupper(c) ((_ctype+1)[c]&(_U))
 
+#define tolower(c) (_ctmp=c,isupper(_ctmp)?_ctmp-('A'-'a'):_ctmp)
 #define toupper(c) (_ctmp=c,islower(_ctmp)?_ctmp-('a'-'A'):_ctmp)
 
 #endif

@@ -25,8 +25,10 @@ struct tty_struct {
 
 // 缓冲区指针向前移 1 字节，超出缓冲区则回到 0 ，就是我们平时说的环形缓冲区
 #define INC(a) ((a) = ((a)+1) & (TTY_BUF_SIZE-1))
+#define DEC(a) ((a) = ((a)-1) & (TTY_BUF_SIZE-1))
 // 缓冲区空闲长度
 #define LEFT(a) (((a).tail-(a).head-1)&(TTY_BUF_SIZE-1))
+#define LAST(a) ((a).buf[(TTY_BUF_SIZE-1)&((a).head-1)])
 // 判断缓冲区是否空
 #define EMPTY(a) ((a).head == (a).tail)
 // 判断缓冲区是否已经满，即空闲长度为 0
@@ -40,6 +42,15 @@ struct tty_struct {
 
 #define PUTCH(c,queue) \
 (void)({(queue).buf[(queue).head]=(c);INC((queue).head);})
+
+#define INTR_CHAR(tty) ((tty)->termios.c_cc[VINTR])
+#define QUIT_CHAR(tty) ((tty)->termios.c_cc[VQUIT])
+#define ERASE_CHAR(tty) ((tty)->termios.c_cc[VERASE])
+#define KILL_CHAR(tty) ((tty)->termios.c_cc[VKILL])
+#define EOF_CHAR(tty) ((tty)->termios.c_cc[VEOF])
+#define START_CHAR(tty) ((tty)->termios.c_cc[VSTART])
+#define STOP_CHAR(tty) ((tty)->termios.c_cc[VSTOP])
+#define SUSPEND_CHAR(tty) ((tty)->termios.c_cc[VSUSP])
 
 #define INIT_C_CC "\003\034\177\025\004\0\1\0\021\023\032\0\022\017\027\026\0"
 
