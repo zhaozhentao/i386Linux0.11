@@ -77,10 +77,6 @@ int sys_fstat() {
     printk("sys_fstat\n");
 }
 
-int sys_pause() {
-    printk("sys_pause\n");
-}
-
 int sys_stty() {
     printk("sys_stty\n");
 }

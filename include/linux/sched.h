@@ -12,8 +12,9 @@
 #define FIRST_TASK task[0]
 #define LAST_TASK task[NR_TASKS-1]
 
-#define TASK_RUNNING		0
-#define TASK_UNINTERRUPTIBLE	2
+#define TASK_RUNNING            0
+#define TASK_INTERRUPTIBLE      1
+#define TASK_UNINTERRUPTIBLE    2
 
 typedef int (*fn_ptr)();
 

@@ -2,7 +2,10 @@
 #include <unistd.h>
 #include <time.h>
 
+static inline fork(void) __attribute__((always_inline));
+static inline pause(void) __attribute__((always_inline));
 static inline _syscall0(int,fork)
+static inline _syscall0(int,pause)
 static inline _syscall1(int,setup,void *,BIOS)
 
 #include <asm/system.h>
@@ -80,9 +83,10 @@ void main(void) {
     main_memory_start = buffer_memory_end;       // main_memory_start 就是将来用来运行应用程序的内存，以内核内存结束的地
 
     mem_init(main_memory_start, memory_end);
-    con_init();
     trap_init();
     blk_dev_init();                                 // 初始化块设备结构
+    chr_dev_init();
+    con_init();
     time_init();
     sched_init();
     buffer_init(buffer_memory_end);
@@ -97,7 +101,7 @@ void main(void) {
     }
 
     // 父进程代码
-    for (;;);
+    for (;;); pause();
 }
 
 static int printf(const char *fmt, ...)

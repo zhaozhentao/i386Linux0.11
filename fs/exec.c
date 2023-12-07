@@ -143,6 +143,8 @@ int do_execve(unsigned long * eip,long tmp,char * filename,
         return -ENOENT;
     argc = count(argv);
     envc = count(envp);
+
+restart_interp:
     if (!S_ISREG(inode->i_mode)) {	/* must be regular file */
         retval = -EACCES;
         goto exec_error2;
@@ -167,6 +169,68 @@ int do_execve(unsigned long * eip,long tmp,char * filename,
     if ((bh->b_data[0] == '#') && (bh->b_data[1] == '!') && (!sh_bang)) {
         char buf[1023], *cp, *interp, *i_name, *i_arg;
         unsigned long old_fs;
+        strncpy(buf, bh->b_data+2, 1022);
+        brelse(bh);
+        iput(inode);
+        buf[1022] = '\0';
+        if ((cp = strchr(buf, '\n'))) {
+            *cp = '\0';
+            for (cp = buf; (*cp == ' ') || (*cp == '\t'); cp++);
+        }
+        if (!cp || *cp == '\0') {
+            retval = -ENOEXEC; /* No interpreter name found */
+            goto exec_error1;
+        }
+        interp = i_name = cp;
+        i_arg = 0;
+        for ( ; *cp && (*cp != ' ') && (*cp != '\t'); cp++) {
+            if (*cp == '/')
+                i_name = cp+1;
+        }
+        if (*cp) {
+            *cp++ = '\0';
+            i_arg = cp;
+        }
+        /*
+        * OK, we've parsed out the interpreter name and
+        * (optional) argument.
+        */
+        if (sh_bang++ == 0) {
+            p = copy_strings(envc, envp, page, p, 0);
+            p = copy_strings(--argc, argv+1, page, p, 0);
+        }
+        /*
+        * Splice in (1) the interpreter's name for argv[0]
+        *           (2) (optional) argument to interpreter
+        *           (3) filename of shell script
+        *
+        * This is done in reverse order, because of how the
+        * user environment and arguments are stored.
+        */
+        p = copy_strings(1, &filename, page, p, 1);
+        argc++;
+        if (i_arg) {
+            p = copy_strings(1, &i_arg, page, p, 2);
+            argc++;
+        }
+        p = copy_strings(1, &i_name, page, p, 2);
+        argc++;
+        if (!p) {
+            retval = -ENOMEM;
+            goto exec_error1;
+        }
+        /*
+        * OK, now restart the process with the interpreter's inode.
+        */
+        old_fs = get_fs();
+        set_fs(get_ds());
+        if (!(inode=namei(interp))) { /* get executables inode */
+            set_fs(old_fs);
+            retval = -ENOENT;
+            goto exec_error1;
+        }
+        set_fs(old_fs);
+        goto restart_interp;
     }
     brelse(bh);
     if (N_MAGIC(ex) != ZMAGIC || ex.a_trsize || ex.a_drsize ||
@@ -218,6 +282,10 @@ int do_execve(unsigned long * eip,long tmp,char * filename,
     return 0;
 exec_error2:
     iput(inode);
+    return(retval);
+exec_error1:
+    for (i=0 ; i<MAX_ARG_PAGES ; i++)
+        free_page(page[i]);
     return(retval);
 }
 

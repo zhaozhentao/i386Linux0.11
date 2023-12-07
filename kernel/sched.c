@@ -64,6 +64,13 @@ void schedule(void) {
     switch_to(next);
 }
 
+int sys_pause(void)
+{
+    current->state = TASK_INTERRUPTIBLE;
+    schedule();
+    return 0;
+}
+
 void sleep_on(struct task_struct **p)
 {
     struct task_struct *tmp;
