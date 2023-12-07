@@ -10,7 +10,7 @@ CPP += -I../../include
 .c.o:
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS = tty_io.o console.o keyboard.o
+OBJS = tty_io.o console.o keyboard.o tty_ioctl.o
 
 chr_drv.a: $(OBJS)
 	$(AR) rcs chr_drv.a $(OBJS)

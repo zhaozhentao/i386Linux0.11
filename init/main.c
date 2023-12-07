@@ -97,8 +97,7 @@ void main(void) {
 
     if (!fork()) {
         // fork 返回值 > 0 ，运行子进程代码
-        while(1);
-        // init();
+        init();
     }
 
     // 父进程代码

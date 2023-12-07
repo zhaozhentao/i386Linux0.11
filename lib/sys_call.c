@@ -147,10 +147,6 @@ int sys_lock() {
     printk("sys_lock\n");
 }
 
-int sys_ioctl() {
-    printk("sys_ioctl\n");
-}
-
 int sys_fcntl() {
     printk("sys_fcntl\n");
 }

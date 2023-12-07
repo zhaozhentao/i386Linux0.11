@@ -16,6 +16,10 @@
 #define TASK_INTERRUPTIBLE      1
 #define TASK_UNINTERRUPTIBLE    2
 
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
 typedef int (*fn_ptr)();
 
 // 数学协处理器结构，进程切换时保存执行状态信息

@@ -52,6 +52,8 @@ struct tty_struct {
 #define STOP_CHAR(tty) ((tty)->termios.c_cc[VSTOP])
 #define SUSPEND_CHAR(tty) ((tty)->termios.c_cc[VSUSP])
 
+extern struct tty_struct tty_table[];
+
 #define INIT_C_CC "\003\034\177\025\004\0\1\0\021\023\032\0\022\017\027\026\0"
 
 void con_write(struct tty_struct * tty);

@@ -16,6 +16,7 @@
 #define EISDIR                  21      // 是目录文件
 #define EINVAL                  22      // 参数无效
 #define EMFILE                  24      // 打开文件数过多
+#define ENOTTY                  25
 #define ENOSPC                  28      // 没有空间
 #define ENOSYS                  38      // 功能还没实现
 #define ENOTEMPTY               39      // 目录不为空
