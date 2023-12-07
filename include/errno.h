@@ -4,6 +4,7 @@
 #define ERROR                   99      // 一般错误
 #define EPERM                   1       // 操作没有许可
 #define ENOENT                  2       // 文件或目录不存在
+#define EIO                     5
 #define ENOEXEC                 8       // 执行程序格式错误
 #define EBADF                   9       // 文件描述符错误
 #define EAGAIN                  11      // 资源暂时不可用

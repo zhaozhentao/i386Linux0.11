@@ -27,6 +27,7 @@ void buffer_init(long buffer_end);
 #define NR_HASH 307                    // 管理缓冲区的 hash_table 有 307 项
 #define NR_BUFFERS nr_buffers          // 缓冲块数量，变量定义在 fs/buffer.c 中
 #define BLOCK_SIZE 1024                // 每个缓冲区的大小 1k
+#define BLOCK_SIZE_BITS 10
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif

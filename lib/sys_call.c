@@ -5,10 +5,6 @@ int sys_exit() {
     printk("sys_exit\n");
 }
 
-int sys_read() {
-    printk("sys_read\n");
-}
-
 int sys_waitpid() {
     printk("sys_waitpid\n");
 }
