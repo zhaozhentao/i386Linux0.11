@@ -6,6 +6,11 @@ typedef unsigned int sigset_t;		/* 32 bits */
 #define SIGINT		 2
 #define SIGQUIT		 3
 #define SIGILL		 4
+#define SIGKILL		 9
+
+#define SA_NOCLDSTOP	1
+#define SA_NOMASK	0x40000000
+#define SA_ONESHOT	0x80000000
 
 // 信号处理数据结构
 struct sigaction {

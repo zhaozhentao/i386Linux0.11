@@ -14,7 +14,7 @@ CFLAGS	+= -I../include
 	$(CC) $(CFLAGS) -c -o $*.o $<
 
 OBJS  = sched.o system_call.o traps.o asm.o fork.o panic.o printk.o vsprintf.o \
-		sys.o mktime.o
+		sys.o signal.o mktime.o
 
 kernel.o: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
@@ -31,6 +31,8 @@ panic.o: panic.c ../include/linux/kernel.h ../include/linux/sched.h
 printk.o: printk.c ../include/stdarg.h
 
 vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h
+
+signal.o: signal.c
 
 sys.o: sys.c
 

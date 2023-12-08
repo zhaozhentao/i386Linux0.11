@@ -120,10 +120,6 @@ int sys_getgid() {
     printk("sys_getgid\n");
 }
 
-int sys_signal() {
-    printk("sys_signal\n");
-}
-
 int sys_geteuid() {
     printk("sys_geteuid\n");
 }
