@@ -179,10 +179,6 @@ int sys_setsid() {
     printk("sys_setsid\n");
 }
 
-int sys_sigaction() {
-    printk("sys_sigaction\n");
-}
-
 int sys_sgetmask() {
     printk("sys_sgetmask\n");
 }
