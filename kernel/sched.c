@@ -105,6 +105,11 @@ void do_timer(long cpl) {
     schedule();
 }
 
+int sys_getuid(void)
+{
+	return current->uid;
+}
+
 void sched_init(void) {
     int i;
     struct desc_struct * p;

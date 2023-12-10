@@ -53,10 +53,6 @@ int sys_setuid() {
     printk("sys_setuid\n");
 }
 
-int sys_getuid() {
-    printk("sys_getuid\n");
-}
-
 int sys_stime() {
     printk("sys_stime\n");
 }
