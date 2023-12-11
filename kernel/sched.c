@@ -3,6 +3,26 @@
 #include <asm/system.h>
 #include <asm/io.h>
 
+void show_task(int nr,struct task_struct * p)
+{
+	int i,j = 4096-sizeof(struct task_struct);
+
+	printk("%d: pid=%d, state=%d, ",nr,p->pid,p->state);
+	i=0;
+	while (i<j && !((char *)(p+1))[i])
+		i++;
+	printk("%d (of %d) chars free in kernel stack\n\r",i,j);
+}
+
+void show_stat(void)
+{
+	int i;
+
+	for (i=0;i<NR_TASKS;i++)
+		if (task[i])
+			show_task(i,task[i]);
+}
+
 // 8253 芯片输入时钟频率约为 1.193180 MHz，Linux 内核希望定时器产生中断的频率是 100Hz ，即每 10ms 产生一次
 // 中断，这个是 8253 芯片的初始值
 #define LATCH (1193180/HZ)
@@ -85,6 +105,27 @@ void sleep_on(struct task_struct **p)
     schedule();
     if (tmp)
         tmp->state=0;
+}
+
+void interruptible_sleep_on(struct task_struct **p)
+{
+	struct task_struct *tmp;
+
+	if (!p)
+		return;
+	if (current == &(init_task.task))
+		panic("task[0] trying to sleep");
+	tmp=*p;
+	*p=current;
+repeat:	current->state = TASK_INTERRUPTIBLE;
+	schedule();
+	if (*p && *p != current) {
+		(**p).state=0;
+		goto repeat;
+	}
+	*p=NULL;
+	if (tmp)
+		tmp->state=0;
 }
 
 void wake_up(struct task_struct **p)
