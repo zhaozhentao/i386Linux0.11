@@ -8,8 +8,7 @@ static void cp_stat(struct m_inode * inode, struct stat * statbuf) {
     struct stat tmp;
     int i;
 
-    // todo verify_area
-    // verify_area(statbuf,sizeof (* statbuf));
+    verify_area(statbuf,sizeof (* statbuf));
     tmp.st_dev = inode->i_dev;
     tmp.st_ino = inode->i_num;
     tmp.st_mode = inode->i_mode;

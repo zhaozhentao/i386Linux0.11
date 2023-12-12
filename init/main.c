@@ -101,7 +101,7 @@ void main(void) {
     }
 
     // 父进程代码
-    for (;;); pause();
+    for (;;) pause();
 }
 
 static int printf(const char *fmt, ...)

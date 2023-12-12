@@ -73,7 +73,7 @@ struct m_inode {
     unsigned short i_zone[9];
     /* 只存在于内存中的字段 */
     // 暂时不涉及进程相关
-    //struct task_struct * i_wait;
+    struct task_struct * i_wait;
     unsigned long i_atime;              // 最后访问时间
     unsigned long i_ctime;              // i 节点自身修改时间
     unsigned short i_dev;               // i 节点所在的设备号

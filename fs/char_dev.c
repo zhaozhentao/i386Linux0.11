@@ -10,10 +10,15 @@ typedef int (*crw_ptr)(int rw,unsigned minor,char * buf,int count,off_t * pos);
 
 static int rw_ttyx(int rw,unsigned minor,char * buf,int count,off_t * pos)
 {
-    // todo tty read
-    // 调用 tty 的底层读写操作
-    return ((rw==READ)? 0 :
-        tty_write(minor,buf,count));
+	return ((rw==READ)?tty_read(minor,buf,count):
+		tty_write(minor,buf,count));
+}
+
+static int rw_tty(int rw,unsigned minor,char * buf,int count, off_t * pos)
+{
+	if (current->tty<0)
+		return -EPERM;
+	return rw_ttyx(rw,current->tty,buf,count,pos);
 }
 
 #define NRDEVS ((sizeof (crw_table))/(sizeof (crw_ptr)))
@@ -24,7 +29,7 @@ static crw_ptr crw_table[]={
     NULL,        /* /dev/fd */
     NULL,        /* /dev/hd */
     rw_ttyx,     /* /dev/ttyx */
-    NULL,      /* /dev/tty */
+    rw_tty,      /* /dev/tty */
     NULL,        /* /dev/lp */
     NULL         /* unnamed pipes */
 };

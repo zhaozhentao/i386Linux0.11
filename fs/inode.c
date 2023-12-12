@@ -1,6 +1,8 @@
 #include <linux/fs.h>
 #include <sys/stat.h>
 
+#include <asm/system.h>
+
 // 内存中的 i 节点表
 struct m_inode inode_table[NR_INODE]={{0,},};
 
@@ -8,15 +10,23 @@ static void read_inode(struct m_inode * inode);
 static void write_inode(struct m_inode * inode);
 
 static inline void wait_on_inode(struct m_inode * inode) {
-
+    cli();
+    while (inode->i_lock)
+        sleep_on(&inode->i_wait);
+    sti();
 }
 
 static inline void lock_inode(struct m_inode * inode) {
+    cli();
+    while (inode->i_lock)
+        sleep_on(&inode->i_wait);
     inode->i_lock=1;
+    sti();
 }
 
 static inline void unlock_inode(struct m_inode * inode) {
     inode->i_lock=0;
+    wake_up(&inode->i_wait);
 }
 
 // 获取一个空闲的 inode

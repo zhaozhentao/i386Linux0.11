@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <utime.h>
+#include <sys/stat.h>
 
 #include <linux/sched.h>
+#include <linux/tty.h>
 #include <asm/segment.h>
 
 // 取文件系统信息，返回已经安装的文件系统统计信息向 ubuf 中设置总空闲块数和空闲 inode 数
@@ -62,6 +64,21 @@ int sys_open(const char * filename,int flag,int mode) {
         current->filp[fd]=NULL;
         f->f_count=0;
         return i;
+    }
+
+    if (S_ISCHR(inode->i_mode)) {
+        if (MAJOR(inode->i_zone[0])==4) {
+            if (current->leader && current->tty<0) {
+                current->tty = MINOR(inode->i_zone[0]);
+                tty_table[current->tty].pgrp = current->pgrp;
+            }
+        } else if (MAJOR(inode->i_zone[0])==5)
+            if (current->tty<0) {
+                iput(inode);
+                current->filp[fd]=NULL;
+                f->f_count=0;
+                return -EPERM;
+            }
     }
 
     // 设置文件结构属性，引用计数，inode，设置打开位置为 0
