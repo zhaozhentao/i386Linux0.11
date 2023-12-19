@@ -1,14 +1,6 @@
 #define __LIBRARY__
 #include <unistd.h>
 
-int sys_exit() {
-    printk("sys_exit\n");
-}
-
-int sys_waitpid() {
-    printk("sys_waitpid\n");
-}
-
 int sys_creat() {
     printk("sys_creat\n");
 }
@@ -86,10 +78,6 @@ int sys_nice() {
 }
 int sys_ftime() {
     printk("sys_ftime\n");
-}
-
-int sys_kill() {
-    printk("sys_kill\n");
 }
 
 int sys_rename() {

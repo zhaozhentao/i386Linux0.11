@@ -8,6 +8,7 @@
 #define O_CREAT               00100    // 如果文件不存在就创建
 #define O_EXCL                00200    // 独占使用文件标志
 #define O_TRUNC               01000    // 若文件存在且是写操作，截断文件
+#define O_APPEND	02000
 
 #endif
 
