@@ -41,11 +41,6 @@ int sys_break() {
     while(1);
 }
 
-int sys_lseek() {
-    printk("sys_lseek\n");
-    while(1);
-}
-
 int sys_getpid() {
     printk("sys_getpid\n");
     while(1);

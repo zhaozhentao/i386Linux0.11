@@ -3,6 +3,8 @@
 
 #include <sys/types.h>
 
+#define IS_SEEKABLE(x) ((x)>=1 && (x)<=3)
+
 #define READ 0
 #define WRITE 1
 #define READA 2       /* read-ahead - don't pause */
