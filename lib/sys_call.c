@@ -16,11 +16,6 @@ int sys_creat() {
     while(1);
 }
 
-int sys_chdir() {
-    printk("sys_chdir\n");
-    while(1);
-}
-
 int sys_mknod() {
     printk("sys_mknod\n");
     while(1);

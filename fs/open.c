@@ -33,6 +33,22 @@ int sys_utime(char * filename, struct utimbuf * times)
     return 0;
 }
 
+int sys_chdir(const char * filename)
+{
+    struct m_inode * inode;
+
+    if (!(inode = namei(filename)))
+        return -ENOENT;
+    if (!S_ISDIR(inode->i_mode)) {
+        iput(inode);
+        return -ENOTDIR;
+    }
+    iput(current->pwd);
+    current->pwd = inode;
+    return (0);
+}
+
+
 int sys_open(const char * filename,int flag,int mode) {
     struct m_inode * inode;
     struct file * f;
