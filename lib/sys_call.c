@@ -126,21 +126,6 @@ int sys_setgid() {
     while(1);
 }
 
-int sys_getgid() {
-    printk("sys_getgid\n");
-    while(1);
-}
-
-int sys_geteuid() {
-    printk("sys_geteuid\n");
-    while(1);
-}
-
-int sys_getegid() {
-    printk("sys_getegid\n");
-    while(1);
-}
-
 int sys_acct() {
     printk("sys_acct\n");
     while(1);

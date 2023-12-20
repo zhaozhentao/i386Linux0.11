@@ -161,6 +161,21 @@ int sys_getuid(void)
 	return current->uid;
 }
 
+int sys_geteuid(void)
+{
+    return current->euid;
+}
+
+int sys_getgid(void)
+{
+    return current->gid;
+}
+
+int sys_getegid(void)
+{
+    return current->egid;
+}
+
 void sched_init(void) {
     int i;
     struct desc_struct * p;
