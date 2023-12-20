@@ -181,11 +181,6 @@ int sys_setpgid() {
     while(1);
 }
 
-int sys_uname() {
-    printk("sys_uname\n");
-    while(1);
-}
-
 int sys_umask() {
     printk("sys_umask\n");
     while(1);
