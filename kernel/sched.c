@@ -146,6 +146,16 @@ void do_timer(long cpl) {
     schedule();
 }
 
+int sys_getpid(void)
+{
+    return current->pid;
+}
+
+int sys_getppid(void)
+{
+    return current->father;
+}
+
 int sys_getuid(void)
 {
 	return current->uid;

@@ -36,11 +36,6 @@ int sys_break() {
     while(1);
 }
 
-int sys_getpid() {
-    printk("sys_getpid\n");
-    while(1);
-}
-
 int sys_mount() {
     printk("sys_mount\n");
     while(1);
@@ -188,11 +183,6 @@ int sys_chroot() {
 
 int sys_dup2() {
     printk("sys_dup2\n");
-    while(1);
-}
-
-int sys_getppid() {
-    printk("sys_getppid\n");
     while(1);
 }
 
