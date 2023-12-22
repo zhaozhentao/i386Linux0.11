@@ -141,11 +141,6 @@ int sys_lock() {
     while(1);
 }
 
-int sys_fcntl() {
-    printk("sys_fcntl\n");
-    while(1);
-}
-
 int sys_mpx() {
     printk("sys_mpx\n");
     while(1);

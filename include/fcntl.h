@@ -9,6 +9,17 @@
 #define O_EXCL                00200    // 独占使用文件标志
 #define O_TRUNC               01000    // 若文件存在且是写操作，截断文件
 #define O_APPEND              02000
+#define O_NONBLOCK            04000    /* not fcntl */
+
+
+#define F_DUPFD		0	/* dup */
+#define F_GETFD		1	/* get f_flags */
+#define F_SETFD		2	/* set f_flags */
+#define F_GETFL		3	/* more flags (cloexec) */
+#define F_SETFL		4
+#define F_GETLK		5	/* not implemented */
+#define F_SETLK		6
+#define F_SETLKW	7
 
 #endif
 
