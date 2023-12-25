@@ -161,11 +161,6 @@ int sys_chroot() {
     while(1);
 }
 
-int sys_dup2() {
-    printk("sys_dup2\n");
-    while(1);
-}
-
 int sys_getpgrp() {
     printk("sys_getpgrp\n");
     while(1);
