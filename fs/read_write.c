@@ -4,6 +4,7 @@
 #include <linux/sched.h>
 
 extern int block_read(int dev, off_t * pos, char * buf, int count);
+extern int block_write(int dev, off_t * pos, char * buf, int count);
 
 int sys_lseek(unsigned int fd,off_t offset, int origin)
 {
@@ -80,6 +81,8 @@ int sys_write(unsigned int fd,char * buf,int count) {
     // 如果打开的文件是字符设备，调用其读写操作
     if (S_ISCHR(inode->i_mode))
         return rw_char(WRITE,inode->i_zone[0],buf,count,&file->f_pos);
+    if (S_ISREG(inode->i_mode))
+        return file_write(inode,file,buf,count);
     printk("(Write)inode->i_mode=%06o\n\r",inode->i_mode);
     return -EINVAL;
 }
