@@ -56,11 +56,6 @@ int sys_ptrace() {
     while(1);
 }
 
-int sys_alarm() {
-    printk("sys_alarm\n");
-    while(1);
-}
-
 int sys_fstat() {
     printk("sys_fstat\n");
     while(1);

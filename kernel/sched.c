@@ -146,6 +146,16 @@ void do_timer(long cpl) {
     schedule();
 }
 
+int sys_alarm(long seconds)
+{
+    int old = current->alarm;
+    
+    if (old)
+        old = (old - jiffies) / HZ;
+    current->alarm = (seconds>0)?(jiffies+HZ*seconds):0;
+    return (old);
+}
+
 int sys_getpid(void)
 {
     return current->pid;
