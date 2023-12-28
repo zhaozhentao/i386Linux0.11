@@ -1,11 +1,6 @@
 #define __LIBRARY__
 #include <unistd.h>
 
-int sys_exit() {
-    printk("sys_exit\n");
-    while(1);
-}
-
 int sys_waitpid() {
     printk("sys_waitpid\n");
     while(1);
