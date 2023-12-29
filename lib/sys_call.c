@@ -51,11 +51,6 @@ int sys_ptrace() {
     while(1);
 }
 
-int sys_fstat() {
-    printk("sys_fstat\n");
-    while(1);
-}
-
 int sys_stty() {
     printk("sys_stty\n");
     while(1);
@@ -136,11 +131,6 @@ int sys_setpgid() {
     while(1);
 }
 
-int sys_umask() {
-    printk("sys_umask\n");
-    while(1);
-}
-
 int sys_chroot() {
     printk("sys_chroot\n");
     while(1);
@@ -148,11 +138,6 @@ int sys_chroot() {
 
 int sys_getpgrp() {
     printk("sys_getpgrp\n");
-    while(1);
-}
-
-int sys_setsid() {
-    printk("sys_setsid\n");
     while(1);
 }
 

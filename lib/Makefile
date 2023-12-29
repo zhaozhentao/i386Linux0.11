@@ -9,12 +9,14 @@ CFLAGS	+= -I../include
 .c.o:
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
-OBJS  = ctype.o open.o close.o errno.o write.o dup.o string.o \
+OBJS  = ctype.o _exit.o open.o close.o errno.o write.o dup.o setsid.o string.o \
 		execve.o wait.o sys_call.o
 
 lib.a: $(OBJS)
 	$(AR) rcs lib.a $(OBJS)
 	sync
+
+_exit.s _exit.o : _exit.c
 
 string.o : string.c
 
@@ -25,6 +27,8 @@ close.s close.o : close.c
 ctype.o : ctype.c ../include/ctype.h 
 
 open.s open.o : open.c
+
+setsid.s setsid.o : setsid.c
 
 dup.s dup.o : dup.c
 

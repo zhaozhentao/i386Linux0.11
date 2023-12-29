@@ -118,6 +118,9 @@ static int printf(const char *fmt, ...)
 static char * argv_rc[] = { "/bin/sh", NULL };
 static char * envp_rc[] = { "HOME=/", NULL };
 
+static char * argv[] = { "-/bin/sh",NULL };
+static char * envp[] = { "HOME=/usr/root", NULL };
+
 void init(void) {
     int pid,i;
 
@@ -137,5 +140,21 @@ void init(void) {
     if (pid>0)
         while (pid != wait(&i));
 
-    printf("wait\n");
+    while (1) {
+        if ((pid=fork())<0) {
+            printf("Fork failed in init\r\n");
+            continue;
+        }
+        if (!pid) {
+            close(0);close(1);close(2);
+            setsid();
+            (void) open("/dev/tty0",O_RDWR,0);
+            (void) dup(0);
+            (void) dup(0);
+            _exit(execve("/bin/sh",argv,envp));
+        }
+        while (1)
+            if (pid == wait(&i))
+                break;
+    }
 }

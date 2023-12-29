@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 
 #include <linux/fs.h>
+#include <linux/sched.h>
 #include <asm/segment.h>
 
 // 把 inode 中的信息 copy 到用户空间中的 statbuf
@@ -34,5 +35,16 @@ int sys_stat(char * filename, struct stat * statbuf) {
     cp_stat(inode,statbuf);
     iput(inode);
     return 0;
+}
+
+int sys_fstat(unsigned int fd, struct stat * statbuf)
+{
+	struct file * f;
+	struct m_inode * inode;
+
+	if (fd >= NR_OPEN || !(f=current->filp[fd]) || !(inode=f->f_inode))
+		return -EBADF;
+	cp_stat(inode,statbuf);
+	return 0;
 }
 
