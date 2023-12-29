@@ -133,4 +133,7 @@ void init(void) {
         open("/etc/rc",O_RDONLY,0);
         execve("/bin/sh",argv_rc,envp_rc);
     }
+
+    if (pid>0)
+        while (pid != wait(&i));
 }

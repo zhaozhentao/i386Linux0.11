@@ -10,13 +10,15 @@ CFLAGS	+= -I../include
 	@$(CC) $(CFLAGS) -c -o $*.o $<
 
 OBJS  = ctype.o open.o close.o errno.o write.o dup.o string.o \
-		execve.o sys_call.o
+		execve.o wait.o sys_call.o
 
 lib.a: $(OBJS)
 	$(AR) rcs lib.a $(OBJS)
 	sync
 
 string.o : string.c
+
+wait.s wait.o : wait.c
 
 close.s close.o : close.c
 
