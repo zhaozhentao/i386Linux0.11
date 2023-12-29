@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 
 #include <linux/fs.h>
+#include <asm/segment.h>
 
 // 把 inode 中的信息 copy 到用户空间中的 statbuf
 static void cp_stat(struct m_inode * inode, struct stat * statbuf) {
@@ -20,9 +21,8 @@ static void cp_stat(struct m_inode * inode, struct stat * statbuf) {
     tmp.st_atime = inode->i_atime;
     tmp.st_mtime = inode->i_mtime;
     tmp.st_ctime = inode->i_ctime;
-    // todo copy to user
     for (i=0 ; i<sizeof (tmp) ; i++)
-        ((char *) statbuf)[i] = ((char *) &tmp)[i];
+        put_fs_byte(((char *) &tmp)[i],&((char *) statbuf)[i]);
 }
 
 // 文件状态系统调用, 根据指定的文件名获取文件状态，文件状态存放在 statbuf 中

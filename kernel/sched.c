@@ -3,6 +3,9 @@
 #include <asm/system.h>
 #include <asm/io.h>
 
+#define _S(nr) (1<<((nr)-1))
+#define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
+
 void show_task(int nr,struct task_struct * p)
 {
 	int i,j = 4096-sizeof(struct task_struct);
@@ -57,6 +60,17 @@ struct {
 void schedule(void) {
     int i,next,c;
     struct task_struct ** p;
+
+    for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+        if (*p) {
+            if ((*p)->alarm && (*p)->alarm < jiffies) {
+                (*p)->signal |= (1<<(SIGALRM-1));
+                (*p)->alarm = 0;
+            }
+            if (((*p)->signal & ~(_BLOCKABLE & (*p)->blocked)) &&
+                (*p)->state==TASK_INTERRUPTIBLE)
+                (*p)->state=TASK_RUNNING;
+        }
 
     // 从任务数组中找出 counter 最大的任务赋值到 next （运行时间还不长）
     while (1) {

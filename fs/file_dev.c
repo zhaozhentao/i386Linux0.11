@@ -31,7 +31,6 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
         // 如果上面从设备读到数据，则复制到缓冲区，否则填 0
         if (bh) {
             char * p = nr + bh->b_data;
-            // todo 目前未区分内核空间和用户空间，直接的内存复制
             while (chars-->0)
                 put_fs_byte(*(p++),buf++);
             brelse(bh);

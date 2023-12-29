@@ -1,5 +1,6 @@
 #include <linux/fs.h>
 #include <linux/sched.h>
+#include <asm/system.h>
 
 // 测试指定位的 0 1 值，并返回该比特位值
 #define set_bit(bitnr,addr) ({ \
@@ -11,6 +12,14 @@ struct super_block super_block[NR_SUPER];
 // 在 init/main.c 中初始化
 int ROOT_DEV = 0;
 
+static void wait_on_super(struct super_block * sb)
+{
+    cli();
+    while (sb->s_lock)
+        sleep_on(&(sb->s_wait));
+    sti();
+}
+
 // 根据设备号寻找对应的超级块
 struct super_block * get_super(int dev) {
     struct super_block * s;
@@ -20,8 +29,7 @@ struct super_block * get_super(int dev) {
     s = 0+super_block;
     while (s < NR_SUPER+super_block)
         if (s->s_dev == dev) {
-            // todo 暂时未实现超级块锁定相关代码
-            // wait_on_super(s);
+            wait_on_super(s);
             if (s->s_dev == dev)
                 return s;
             s = 0+super_block;

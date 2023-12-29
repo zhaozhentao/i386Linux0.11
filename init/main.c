@@ -136,4 +136,6 @@ void init(void) {
 
     if (pid>0)
         while (pid != wait(&i));
+
+    printf("wait\n");
 }
