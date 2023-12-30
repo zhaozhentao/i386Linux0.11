@@ -1,11 +1,6 @@
 #define __LIBRARY__
 #include <unistd.h>
 
-int sys_creat() {
-    printk("sys_creat\n");
-    while(1);
-}
-
 int sys_mknod() {
     printk("sys_mknod\n");
     while(1);

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <utime.h>
 #include <sys/stat.h>
 
@@ -132,6 +133,11 @@ int sys_open(const char * filename,int flag,int mode) {
     f->f_inode = inode;
     f->f_pos = 0;
     return (fd);
+}
+
+int sys_creat(const char * pathname, int mode)
+{
+    return sys_open(pathname, O_CREAT | O_TRUNC, mode);
 }
 
 int sys_close(unsigned int fd)
