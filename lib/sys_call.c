@@ -61,11 +61,6 @@ int sys_gtty() {
     while(1);
 }
 
-int sys_access() {
-    printk("sys_access\n");
-    while(1);
-}
-
 int sys_nice() {
     printk("sys_nice\n");
     while(1);
