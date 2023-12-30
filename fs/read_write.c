@@ -48,10 +48,8 @@ int sys_read(unsigned int fd,char * buf,int count)
         return 0;
     verify_area(buf,count);
     inode = file->f_inode;
-    // todo pipe
-    //if (inode->i_pipe)
-    //    return (file->f_mode&1)?read_pipe(inode,buf,count):-EIO;
-
+    if (inode->i_pipe)
+        return (file->f_mode&1)?read_pipe(inode,buf,count):-EIO;
     if (S_ISCHR(inode->i_mode))
         return rw_char(READ,inode->i_zone[0],buf,count,&file->f_pos);
     if (S_ISBLK(inode->i_mode))
@@ -78,6 +76,8 @@ int sys_write(unsigned int fd,char * buf,int count) {
         return 0;
     // 取出打开文件的 inode
     inode=file->f_inode;
+    if (inode->i_pipe)
+        return (file->f_mode&2)?write_pipe(inode,buf,count):-EIO;
     // 如果打开的文件是字符设备，调用其读写操作
     if (S_ISCHR(inode->i_mode))
         return rw_char(WRITE,inode->i_zone[0],buf,count,&file->f_pos);

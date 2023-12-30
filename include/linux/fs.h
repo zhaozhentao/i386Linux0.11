@@ -40,6 +40,7 @@ void buffer_init(long buffer_end);
 
 #define PIPE_HEAD(inode) ((inode).i_zone[0])
 #define PIPE_TAIL(inode) ((inode).i_zone[1])
+#define PIPE_SIZE(inode) ((PIPE_HEAD(inode)-PIPE_TAIL(inode))&(PAGE_SIZE-1))
 
 struct buffer_head {
     char * b_data;                     // 指向具体的缓冲区
