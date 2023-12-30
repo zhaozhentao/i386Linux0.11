@@ -38,6 +38,9 @@ void buffer_init(long buffer_end);
 // 每个块能够存放的目录项数目
 #define DIR_ENTRIES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct dir_entry)))
 
+#define PIPE_HEAD(inode) ((inode).i_zone[0])
+#define PIPE_TAIL(inode) ((inode).i_zone[1])
+
 struct buffer_head {
     char * b_data;                     // 指向具体的缓冲区
     unsigned long b_blocknr;           // 要操作的块号

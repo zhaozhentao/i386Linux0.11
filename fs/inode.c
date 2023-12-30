@@ -210,6 +210,22 @@ repeat:
     return;
 }
 
+struct m_inode * get_pipe_inode(void)
+{
+    struct m_inode * inode;
+
+    if (!(inode = get_empty_inode()))
+        return NULL;
+    if (!(inode->i_size=get_free_page())) {
+        inode->i_count = 0;
+        return NULL;
+    }
+    inode->i_count = 2;	/* sum of readers/writers */
+    PIPE_HEAD(*inode) = PIPE_TAIL(*inode) = 0;
+    inode->i_pipe = 1;
+    return inode;
+}
+
 // 获取指定设备的 nr 号 inode
 struct m_inode * iget(int dev,int nr) {
     struct m_inode * inode, * empty;

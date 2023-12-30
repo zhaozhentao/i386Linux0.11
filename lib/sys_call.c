@@ -86,11 +86,6 @@ int sys_rename() {
     while(1);
 }
 
-int sys_pipe() {
-    printk("sys_pipe\n");
-    while(1);
-}
-
 int sys_times() {
     printk("sys_times\n");
     while(1);
