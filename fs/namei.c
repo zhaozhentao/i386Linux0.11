@@ -172,7 +172,7 @@ static struct buffer_head * add_entry(struct m_inode * dir,
             dir->i_mtime = CURRENT_TIME;
             // 把文件名复制到这个目录项
             for (i=0; i < NAME_LEN ; i++)
-                de->name[i]=(i<namelen)?name[i]:0;
+                de->name[i]=(i<namelen)?get_fs_byte(name+i):0;
             // 表示需要写入到磁盘中
             bh->b_dirt = 1;
             // 返回可用的目录项
