@@ -5,6 +5,7 @@
 
 #include <linux/sched.h>
 #include <linux/tty.h>
+#include <linux/kernel.h>
 #include <asm/segment.h>
 
 // 取文件系统信息，返回已经安装的文件系统统计信息向 ubuf 中设置总空闲块数和空闲 inode 数
@@ -77,6 +78,21 @@ int sys_chdir(const char * filename)
     return (0);
 }
 
+int sys_chmod(const char * filename,int mode)
+{
+    struct m_inode * inode;
+
+    if (!(inode=namei(filename)))
+        return -ENOENT;
+    if ((current->euid != inode->i_uid) && !suser()) {
+        iput(inode);
+        return -EACCES;
+    }
+    inode->i_mode = (mode & 07777) | (inode->i_mode & ~07777);
+    inode->i_dirt = 1;
+    iput(inode);
+    return 0;
+}
 
 int sys_open(const char * filename,int flag,int mode) {
     struct m_inode * inode;

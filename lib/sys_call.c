@@ -6,11 +6,6 @@ int sys_mknod() {
     while(1);
 }
 
-int sys_chmod() {
-    printk("sys_chmod\n");
-    while(1);
-}
-
 int sys_chown() {
     printk("sys_chown\n");
     while(1);
